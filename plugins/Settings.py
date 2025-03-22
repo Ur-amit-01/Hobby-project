@@ -3,6 +3,7 @@ from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQ
 from helper.database import db
 from config import RENAME_MODE
 import asyncio
+from plugins.start import *
 
 @Client.on_message(filters.private & filters.command("settings"))
 async def open_settings(client, message):
