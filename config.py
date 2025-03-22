@@ -19,7 +19,7 @@ NEW_REQ_MODE = bool(environ.get('NEW_REQ_MODE', False)) # Set True or False
 SESSION_STRING = os.environ.get("SESSION_STRING", "")
 
 START_PIC = os.environ.get("START_PIC", "https://graph.org/file/ad48ac09b1e6f30d2dae4.jpg")
-FORCE_PIC = os.environ.get("FORCE_PIC", "https://telegra.ph/file/e292b12890b8b4b9dcbd1.jpg")
+FORCE_PIC = os.environ.get("FORCE_PIC", "https://envs.sh/nrg.jpg")
 AUTH_CHANNEL = [int(ch) if id_pattern.search(ch) else ch for ch in environ.get('AUTH_CHANNEL', '-1002385466192').split()] #Ex : ('-10073828 -102782829 -1007282828')
 LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", "-1002027394591"))
 
