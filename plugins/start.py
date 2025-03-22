@@ -88,7 +88,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
         txt = ABOUT_TXT.format(client.mention)
         reply_markup = InlineKeyboardMarkup([
             [InlineKeyboardButton("🤖 ᴅᴇᴠᴇʟᴏᴘᴇʀ", url="https://t.me/axa_bachha"),
-            InlineKeyboardButton("🏠 𝙷𝙾𝙼𝙴 🏠", callback_data="start")]
+             InlineKeyboardButton("🏠 𝙷𝙾𝙼𝙴 🏠", callback_data="start")]
         ])
 
     elif data == "rename":
