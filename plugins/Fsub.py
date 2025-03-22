@@ -1,7 +1,7 @@
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.errors import UserNotParticipant
-from config import AUTH_CHANNEL
+from config import AUTH_CHANNEL, FORCE_PIC
 
 #=====================================================================================
 
