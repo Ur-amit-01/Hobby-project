@@ -4,14 +4,33 @@ from pyrogram import Client
 from config import *
 from aiohttp import web
 from plugins.web_support import web_server
+import threading  # ======= Added for self-pinging
+import requests   # ======= Added for self-pinging
+import time       # ======= Added for self-pinging
+
+# ======= Self-Pinging Functions =======
+def ping_self():
+    while True:
+        try:
+            # Replace with your bot's actual URL
+            response = requests.get(f"https://squealing-diahann-restrictedsaver-bea22cab.koyeb.app/")
+            
+            logging.info(f"Pinged self: {response.status_code}")
+        except Exception as e:
+            logging.error(f"Failed to ping self: {e}")
+        time.sleep(180)  # Ping every 3 minutes
+
+def start_pinging():
+    t = threading.Thread(target=ping_self)
+    t.daemon = True  # Daemonize thread to exit when the main program exits
+    t.start()
+# ======= End of Self-Pinging Functions =======
 
 logging.config.fileConfig('logging.conf')
 logging.getLogger().setLevel(logging.INFO)
 logging.getLogger("pyrogram").setLevel(logging.ERROR)
 
-
 class Bot(Client):
-
     def __init__(self):
         super().__init__(
             name="renamer",
@@ -29,6 +48,12 @@ class Bot(Client):
         self.mention = me.mention
         self.username = me.username
         
+        # ======= Start the self-pinging mechanism =======
+        start_pinging()
+        logging.info("Self-pinging mechanism started.")
+        # ======= End of self-pinging mechanism =======
+
+        # Start the web server
         app = web.AppRunner(await web_server())
         await app.setup()
         bind_address = "0.0.0.0"
