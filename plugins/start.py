@@ -7,6 +7,7 @@ from helper.database import db
 from pyrogram.errors import *
 import random
 from plugins.Fsub import auth_check
+from plugins.Settings import back_to_settings
 
 # =====================================================================================
 @Client.on_message(filters.private & filters.command("start"))
