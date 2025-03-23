@@ -12,13 +12,11 @@ import time       # ======= Added for self-pinging
 def ping_self():
     while True:
         try:
-            # Replace with your bot's actual URL
-            response = requests.get(f"https://squealing-diahann-restrictedsaver-bea22cab.koyeb.app/")
-            
+            response = requests.get(KOYEB_URL)
             logging.info(f"Pinged self: {response.status_code}")
         except Exception as e:
             logging.error(f"Failed to ping self: {e}")
-        time.sleep(180)  # Ping every 3 minutes
+        time.sleep(210)  # Ping every 3.5 minutes
 
 def start_pinging():
     t = threading.Thread(target=ping_self)
