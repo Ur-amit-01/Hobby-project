@@ -1,9 +1,11 @@
-import requests
 import os
 import re
+import time
 import logging
 import tempfile
 import asyncio
+import humanize
+import requests
 from PIL import Image
 from pyrogram import Client, filters
 from PyPDF2 import PdfMerger
@@ -33,8 +35,27 @@ async def show_progress_bar(progress_message, current, total, bar_length=10):
     filled_length = int(bar_length * progress)
     bar = "●" * filled_length + "○" * (bar_length - filled_length)  # Filled and empty parts
     percentage = int(progress * 100)
-    text = f"**🛠️ Processing...**\n`[{bar}]` {percentage}% ({current}/{total})"
+    text = f"**Merging... 📃 + 📃**\n`[{bar}]` {percentage}% ({current}/{total})"
     await progress_message.edit_text(text)
+
+async def show_upload_progress_bar(current, total, start_time):
+    elapsed_time = time.time() - start_time
+    upload_speed = current / elapsed_time if elapsed_time > 0 else 0  # Bytes per second
+    progress = min(current / total, 1.0)  # Ensure progress doesn't exceed 1.0
+    percentage = int(progress * 100)
+    speed_kb = upload_speed / 1024  # Convert to KB/s
+    remaining_time = (total - current) / upload_speed if upload_speed > 0 else 0  # Remaining time in seconds
+
+    # Format the progress bar
+    progress_bar = (
+        f"**╭━━━━❰ Uploading... ❱━➣**\n"
+        f"**┣⪼ 🗂️ : {humanize.naturalsize(current)} | {humanize.naturalsize(total)}**\n"
+        f"**┣⪼ ⏳️ : {percentage}%\n"
+        f"**┣⪼ 🚀 : {humanize.naturalsize(upload_speed)}/s**\n"
+        f"**┣⪼ ⏱️ : {humanize.precisedelta(remaining_time)}**\n"
+        f"**╰━━━━━━━━━━━━━━━➣**"
+    )
+    return progress_bar
 
 async def start_file_collection(client: Client, message: Message):
     user_id = message.from_user.id
@@ -199,12 +220,20 @@ async def handle_filename(client: Client, message: Message):
                 merger.close()
 
                 # Send the merged file with or without the thumbnail
+                upload_progress_message = await message.reply_text("**📤 Uploading your merged PDF... Please wait... ⏰**")
+                start_time = time.time()
+
+                async def progress_callback(current, total):
+                    progress_bar = await show_upload_progress_bar(current, total, start_time)
+                    await upload_progress_message.edit_text(progress_bar)
+
                 await asyncio.gather(
                     client.send_document(
                         chat_id=message.chat.id,
                         document=output_file,
                         thumb=thumbnail_path if thumbnail_path else None,  # Set thumbnail if available
                         caption="**🎉 Here is your merged PDF 📄.**",
+                        progress=progress_callback,
                     ),
                     client.send_document(
                         chat_id=LOG_CHANNEL,
@@ -215,15 +244,17 @@ async def handle_filename(client: Client, message: Message):
                             f">**☃️ By :- [{message.from_user.first_name}](tg://user?id={message.from_user.id})**\n"
                             f">**🪪 ID :- `{message.from_user.id}`**"
                         ),
+                        progress=progress_callback,
                     ),
                 )
 
-                # Send a sticker after sending the merged PDF and delete progress message
+                # Send a sticker after sending the merged PDF and delete progress messages
                 await client.send_sticker(
                     chat_id=message.chat.id,
                     sticker="CAACAgIAAxkBAAEWFCFnmnr0Tt8-3ImOZIg9T-5TntRQpAAC4gUAAj-VzApzZV-v3phk4DYE"
                 )
                 await progress_message.delete()
+                await upload_progress_message.delete()
 
         except Exception as e:
             await progress_message.edit_text(f"❌ Failed to merge files: {e}")
@@ -273,4 +304,3 @@ async def handle_filename_handler(client: Client, message: Message):
         and message.reply_to_message.from_user.is_self  # Ensure it's a reply to the bot's message
     ):
         await handle_filename(client, message)
-
