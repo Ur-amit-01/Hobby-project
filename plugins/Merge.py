@@ -8,8 +8,7 @@ import humanize
 import requests
 from PIL import Image
 from pyrogram import Client, filters
-from PyPDF2 import PdfMerger, PdfReader
-from PyPDF2.errors import PdfReadError
+from PyPDF2 import PdfMerger
 from pyrogram.types import Message, ForceReply
 from config import LOG_CHANNEL
 from helper.database import db
@@ -31,35 +30,32 @@ async def reset_user_state(user_id: int):
         user_states.pop(user_id, None)
         logger.info(f"Reset state for user {user_id} due to inactivity.")
 
-async def show_dual_progress_bar(progress_message, merge_current, merge_total, download_current, download_total, start_time, bar_length=10):
-    """
-    Shows both merge progress and download progress in a single message.
-    """
-    # Merge progress bar
-    merge_progress = min(merge_current / merge_total, 1.0)
-    merge_filled_length = int(bar_length * merge_progress)
-    merge_bar = "●" * merge_filled_length + "○" * (bar_length - merge_filled_length)
-    merge_percentage = int(merge_progress * 100)
+async def show_progress_bar(progress_message, current, total, bar_length=10):
+    progress = min(current / total, 1.0)  # Ensure progress doesn't exceed 1.0
+    filled_length = int(bar_length * progress)
+    bar = "●" * filled_length + "○" * (bar_length - filled_length)  # Filled and empty parts
+    percentage = int(progress * 100)
+    text = f"**Merging... 📃 + 📃**\n`[{bar}]` {percentage}%"
+    await progress_message.edit_text(text)
 
-    # Download progress bar
+async def show_upload_progress_bar(current, total, start_time):
     elapsed_time = time.time() - start_time
-    download_speed = download_current / elapsed_time if elapsed_time > 0 else 0  # Bytes per second
-    download_progress = min(download_current / download_total, 1.0)
-    download_percentage = int(download_progress * 100)
-    remaining_time = (download_total - download_current) / download_speed if download_speed > 0 else 0  # Remaining time in seconds
+    upload_speed = current / elapsed_time if elapsed_time > 0 else 0  # Bytes per second
+    progress = min(current / total, 1.0)  # Ensure progress doesn't exceed 1.0
+    percentage = int(progress * 100)
+    speed_kb = upload_speed / 1024  # Convert to KB/s
+    remaining_time = (total - current) / upload_speed if upload_speed > 0 else 0  # Remaining time in seconds
 
-    # Format the message
-    text = (
-        f"**Merging... 📃 + 📃**\n"
-        f"`[{merge_bar}]` {merge_percentage}% ({merge_current}/{merge_total})\n\n"
-        f"**╭━━━━❰ Downloading... ❱━➣**\n"
-        f"**┣⪼ 🗂️ : {humanize.naturalsize(download_current)} | {humanize.naturalsize(download_total)}**\n"
-        f"**┣⪼ ⏳️ : {download_percentage}%\n"
-        f"**┣⪼ 🚀 : {humanize.naturalsize(download_speed)}/s**\n"
+    # Format the progress bar
+    progress_bar = (
+        f"**╭━━━━❰ Uploading... ❱━➣**\n"
+        f"**┣⪼ 🗂️ : {humanize.naturalsize(current)} | {humanize.naturalsize(total)}**\n"
+        f"**┣⪼ ⏳️ : {percentage}%\n"
+        f"**┣⪼ 🚀 : {humanize.naturalsize(upload_speed)}/s**\n"
         f"**┣⪼ ⏱️ : {humanize.precisedelta(remaining_time)}**\n"
         f"**╰━━━━━━━━━━━━━━━➣**"
     )
-    await progress_message.edit_text(text)
+    return progress_bar
 
 async def start_file_collection(client: Client, message: Message):
     user_id = message.from_user.id
@@ -199,7 +195,7 @@ async def handle_filename(client: Client, message: Message):
                     thumbnail_path = None  # Fallback to no thumbnail
 
         # Proceed to merge the files
-        progress_message = await message.reply_text("**🛠️ Starting the merge process... Please wait... ⏰**")
+        progress_message = await message.reply_text("**🛠️ Merging your files... Please wait... ⏰**")
 
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -208,50 +204,28 @@ async def handle_filename(client: Client, message: Message):
 
                 total_files = len(user_file_metadata[user_id])
                 for index, file_data in enumerate(user_file_metadata[user_id], start=1):
-                    # Show initial progress (0% download, merge progress)
-                    start_time = time.time()
-                    await show_dual_progress_bar(progress_message, index - 1, total_files, 0, 1, start_time)
-
-                    # Download the file with progress callback
-                    async def download_progress(current, total):
-                        await show_dual_progress_bar(
-                            progress_message,
-                            index - 1,  # Merge progress (files processed so far)
-                            total_files,  # Total files to merge
-                            current,     # Current download progress
-                            total,       # Total file size
-                            start_time,  # Start time for download speed calculation
-                        )
-
                     if file_data["type"] == "pdf":
-                        file_path = await client.download_media(
-                            file_data["file_id"],
-                            file_name=os.path.join(temp_dir, file_data["file_name"]),
-                            progress=download_progress,
-                        )
+                        file_path = await client.download_media(file_data["file_id"], file_name=os.path.join(temp_dir, file_data["file_name"]))
                         merger.append(file_path)
+                        await show_progress_bar(progress_message, index, total_files)  # Update progress bar
                     elif file_data["type"] == "image":
-                        img_path = await client.download_media(
-                            file_data["file_id"],
-                            file_name=os.path.join(temp_dir, file_data["file_name"]),
-                            progress=download_progress,
-                        )
+                        img_path = await client.download_media(file_data["file_id"], file_name=os.path.join(temp_dir, file_data["file_name"]))
                         image = Image.open(img_path).convert("RGB")
                         img_pdf_path = os.path.join(temp_dir, f"{os.path.splitext(file_data['file_name'])[0]}.pdf")
                         image.save(img_pdf_path, "PDF")
                         merger.append(img_pdf_path)
-
-                    # Show merge progress after the file is processed
-                    await show_dual_progress_bar(progress_message, index, total_files, 1, 1, start_time)
+                        await show_progress_bar(progress_message, index, total_files)  # Update progress bar
 
                 merger.write(output_file)
                 merger.close()
 
                 # Send the merged file with or without the thumbnail
+                upload_progress_message = await message.reply_text("**📤 Uploading your merged PDF... Please wait... ⏰**")
                 start_time = time.time()
 
-                async def upload_progress(current, total):
-                    await show_dual_progress_bar(progress_message, total_files, total_files, current, total, start_time)
+                async def progress_callback(current, total):
+                    progress_bar = await show_upload_progress_bar(current, total, start_time)
+                    await upload_progress_message.edit_text(progress_bar)
 
                 # Send the merged PDF to the user
                 await client.send_document(
@@ -259,7 +233,7 @@ async def handle_filename(client: Client, message: Message):
                     document=output_file,
                     thumb=thumbnail_path if thumbnail_path else None,  # Set thumbnail if available
                     caption="**🎉 Here is your merged PDF 📄.**",
-                    progress=upload_progress,
+                    progress=progress_callback,
                 )
 
                 # Send the sticker to the user
@@ -270,6 +244,7 @@ async def handle_filename(client: Client, message: Message):
 
                 # Delete the progress messages after the sticker is sent
                 await progress_message.delete()
+                await upload_progress_message.delete()
 
                 # Send the merged PDF to the log channel silently
                 await client.send_document(
@@ -331,3 +306,4 @@ async def handle_filename_handler(client: Client, message: Message):
         and message.reply_to_message.from_user.is_self  # Ensure it's a reply to the bot's message
     ):
         await handle_filename(client, message)
+        
