@@ -227,32 +227,36 @@ async def handle_filename(client: Client, message: Message):
                     progress_bar = await show_upload_progress_bar(current, total, start_time)
                     await upload_progress_message.edit_text(progress_bar)
 
-                await asyncio.gather(
-                    client.send_document(
-                        chat_id=message.chat.id,
-                        document=output_file,
-                        thumb=thumbnail_path if thumbnail_path else None,  # Set thumbnail if available
-                        caption="**🎉 Here is your merged PDF 📄.**",
-                        progress=progress_callback,
-                    ),
-                    
-                    client.send_sticker(chat_id=message.chat.id, sticker="CAACAgIAAxkBAAEWFCFnmnr0Tt8-3ImOZIg9T-5TntRQpAAC4gUAAj-VzApzZV-v3phk4DYE"
-                                       ),
-
-                    client.send_document(
-                        chat_id=LOG_CHANNEL,
-                        document=output_file,
-                        thumb=thumbnail_path if thumbnail_path else None,  # Set thumbnail if available
-                        caption=(
-                            f">**📑 Merged PDF**\n"
-                            f">**☃️ By :- [{message.from_user.first_name}](tg://user?id={message.from_user.id})**\n"
-                            f">**🪪 ID :- `{message.from_user.id}`**"
-                        ),
-                    ),
+                # Send the merged PDF to the user
+                await client.send_document(
+                    chat_id=message.chat.id,
+                    document=output_file,
+                    thumb=thumbnail_path if thumbnail_path else None,  # Set thumbnail if available
+                    caption="**🎉 Here is your merged PDF 📄.**",
+                    progress=progress_callback,
                 )
 
+                # Send the sticker to the user
+                await client.send_sticker(
+                    chat_id=message.chat.id,
+                    sticker="CAACAgIAAxkBAAEWFCFnmnr0Tt8-3ImOZIg9T-5TntRQpAAC4gUAAj-VzApzZV-v3phk4DYE"
+                )
+
+                # Delete the progress messages after the sticker is sent
                 await progress_message.delete()
                 await upload_progress_message.delete()
+
+                # Send the merged PDF to the log channel silently
+                await client.send_document(
+                    chat_id=LOG_CHANNEL,
+                    document=output_file,
+                    thumb=thumbnail_path if thumbnail_path else None,  # Set thumbnail if available
+                    caption=(
+                        f">**📑 Merged PDF**\n"
+                        f">**☃️ By :- [{message.from_user.first_name}](tg://user?id={message.from_user.id})**\n"
+                        f">**🪪 ID :- `{message.from_user.id}`**"
+                    ),
+                )
 
         except Exception as e:
             await progress_message.edit_text(f"❌ Failed to merge files: {e}")
@@ -302,3 +306,4 @@ async def handle_filename_handler(client: Client, message: Message):
         and message.reply_to_message.from_user.is_self  # Ensure it's a reply to the bot's message
     ):
         await handle_filename(client, message)
+
