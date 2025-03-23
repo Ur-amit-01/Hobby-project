@@ -21,7 +21,7 @@ SESSION_STRING = os.environ.get("SESSION_STRING", "")
 
 START_PIC = os.environ.get("START_PIC", "https://i.ibb.co/HL2qGgtf/x.jpg")
 FORCE_PIC = os.environ.get("FORCE_PIC", "https://envs.sh/nrg.jpg")
-AUTH_CHANNEL = [int(ch) if id_pattern.search(ch) else ch for ch in environ.get('AUTH_CHANNEL', '-1002385466192').split()] #Ex : ('-10073828 -102782829 -1007282828')
+AUTH_CHANNEL = [int(ch) if id_pattern.search(ch) else ch for ch in environ.get('AUTH_CHANNEL', '').split()] #Ex : ('-10073828 -102782829 -1007282828')
 LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", "-1002027394591"))
 
 REACTIONS = ["🤝", "😇", "🤗", "😍", "🎅", "🥰", "🤩", "😘", "😛", "😈", "🎉", "🫡", "😎", "🔥", "🤭", "🌚", "🆒", "👻", "😁"] #don't add any emoji because tg not support all emoji reactions
