@@ -39,8 +39,7 @@ class Bot(Client):
             plugins={"root": "plugins"},
             sleep_threshold=5,
         )
-
-    async def start(self):
+	async def start(self):
         await super().start()
         me = await self.get_me()
         self.mention = me.mention
@@ -57,7 +56,18 @@ class Bot(Client):
         bind_address = "0.0.0.0"
         await web.TCPSite(app, bind_address, PORT).start()
         
-        logging.info(f"{me.first_name} ✅✅ BOT started successfully ✅✅")
+        logging.info(
+            "\n╭━━━╮╱╱╱╭╮╱╱╱╱╱╱╱╱╱╱╱╭╮\n"
+            "┃╭━╮┃╱╱╭╯╰╮╱╱╱╱╱╱╱╱╱╱┃┃\n"
+            "┃┃╱┃┣╮╭╋╮╭╯╭━━┳┳━╮╭━━┫╰━╮\n"
+            "┃╰━╯┃╰╯┣┫┃╱┃━━╋┫╭╮┫╭╮┃╭╮┃\n"
+            "┃╭━╮┃┃┃┃┃╰╮┣━━┃┃┃┃┃╰╯┃┃┃┃\n"
+            "╰╯╱╰┻┻┻┻┻━╯╰━━┻┻╯╰┻━╮┣╯╰╯\n"
+            "╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╭━╯┃\n"
+            "╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱╰━━╯\n"
+            f"{me.first_name} ✅✅ BOT started successfully ✅✅"
+        )
+    
 
     async def stop(self, *args):
         await super().stop()      
