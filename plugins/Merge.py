@@ -195,7 +195,7 @@ async def handle_filename(client: Client, message: Message):
                     thumbnail_path = None  # Fallback to no thumbnail
 
         # Proceed to merge the files
-        progress_message = await message.reply_text("**🛠️ Merging your files... Please wait... ⏰**")
+        progress_message = await message.reply_text("**🛠️ Merging files... Please wait... ⏰**")
 
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -220,7 +220,7 @@ async def handle_filename(client: Client, message: Message):
                 merger.close()
 
                 # Send the merged file with or without the thumbnail
-                upload_progress_message = await message.reply_text("**📤 Uploading your merged PDF... Please wait... ⏰**")
+                upload_progress_message = await message.reply_text("**📤 Uploading PDF... ⏰**")
                 start_time = time.time()
 
                 async def progress_callback(current, total):
