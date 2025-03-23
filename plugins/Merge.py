@@ -248,7 +248,6 @@ async def handle_filename(client: Client, message: Message):
                             f">**☃️ By :- [{message.from_user.first_name}](tg://user?id={message.from_user.id})**\n"
                             f">**🪪 ID :- `{message.from_user.id}`**"
                         ),
-                        progress=progress_callback,
                     ),
                 )
 
