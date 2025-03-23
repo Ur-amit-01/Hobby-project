@@ -8,7 +8,8 @@ import humanize
 import requests
 from PIL import Image
 from pyrogram import Client, filters
-from PyPDF2 import PdfMerger
+from PyPDF2 import PdfMerger, PdfReader
+from PyPDF2.errors import PdfReadError
 from pyrogram.types import Message, ForceReply
 from config import LOG_CHANNEL
 from helper.database import db
@@ -224,26 +225,32 @@ async def handle_filename(client: Client, message: Message):
                     # Show download progress
                     start_time = time.time()
 
-                    async def download_progress(current, total):
-                        await show_download_progress_bar(progress_message, current, total, start_time, file_data["file_name"])
-
-                    if file_data["type"] == "pdf":
-                        file_path = await client.download_media(
-                            file_data["file_id"],
-                            file_name=os.path.join(temp_dir, file_data["file_name"]),
-                            progress=download_progress,
-                        )
-                        merger.append(file_path)
-                    elif file_data["type"] == "image":
-                        img_path = await client.download_media(
-                            file_data["file_id"],
-                            file_name=os.path.join(temp_dir, file_data["file_name"]),
-                            progress=download_progress,
-                        )
-                        image = Image.open(img_path).convert("RGB")
-                        img_pdf_path = os.path.join(temp_dir, f"{os.path.splitext(file_data['file_name'])[0]}.pdf")
-                        image.save(img_pdf_path, "PDF")
-                        merger.append(img_pdf_path)
+                    # Download the file without progress callback to ensure it's fully downloaded
+                    try:
+                        if file_data["type"] == "pdf":
+                            file_path = await client.download_media(
+                                file_data["file_id"],
+                                file_name=os.path.join(temp_dir, file_data["file_name"]),
+                            )
+                            # Validate the downloaded PDF file
+                            try:
+                                PdfReader(file_path)
+                            except PdfReadError:
+                                await message.reply_text(f"❌ File `{file_data['file_name']}` is corrupted or not a valid PDF. Skipping...")
+                                continue
+                            merger.append(file_path)
+                        elif file_data["type"] == "image":
+                            img_path = await client.download_media(
+                                file_data["file_id"],
+                                file_name=os.path.join(temp_dir, file_data["file_name"]),
+                            )
+                            image = Image.open(img_path).convert("RGB")
+                            img_pdf_path = os.path.join(temp_dir, f"{os.path.splitext(file_data['file_name'])[0]}.pdf")
+                            image.save(img_pdf_path, "PDF")
+                            merger.append(img_pdf_path)
+                    except Exception as e:
+                        await message.reply_text(f"❌ Failed to download `{file_data['file_name']}`: {e}")
+                        continue
 
                     # Show merge progress
                     await show_progress_bar(progress_message, index, total_files)
@@ -335,3 +342,4 @@ async def handle_filename_handler(client: Client, message: Message):
         and message.reply_to_message.from_user.is_self  # Ensure it's a reply to the bot's message
     ):
         await handle_filename(client, message)
+
