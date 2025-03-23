@@ -30,23 +30,12 @@ async def reset_user_state(user_id: int):
         user_states.pop(user_id, None)
         logger.info(f"Reset state for user {user_id} due to inactivity.")
 
-async def show_progress_bar(progress_message, current, total, file_name="", bar_length=10):
-    progress = min(current / total, 1.0)  # Ensure progress doesn't exceed 100%
+async def show_progress_bar(progress_message, current, total, bar_length=10):
+    progress = min(current / total, 1.0)  # Ensure progress doesn't exceed 1.0
     filled_length = int(bar_length * progress)
     bar = "●" * filled_length + "○" * (bar_length - filled_length)  # Filled and empty parts
     percentage = int(progress * 100)
-
-    # Convert bytes to human-readable format (MB, GB)
-    downloaded_size = humanize.naturalsize(current)
-    total_size = humanize.naturalsize(total)
-
-    text = (
-        f"**Merging... 📃 + 📃**\n"
-        f"**[{bar}] {percentage}%**\n\n"
-        f"📂 **File: {file_name}**\n"
-        f"📥 **Downloaded: {downloaded_size} / {total_size}**"
-    )
-
+    text = f"**Merging... 📃 + 📃**\n`[{bar}]` {percentage}%"
     await progress_message.edit_text(text)
 
 async def show_upload_progress_bar(current, total, start_time):
@@ -317,3 +306,4 @@ async def handle_filename_handler(client: Client, message: Message):
         and message.reply_to_message.from_user.is_self  # Ensure it's a reply to the bot's message
     ):
         await handle_filename(client, message)
+        
