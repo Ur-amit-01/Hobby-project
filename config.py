@@ -6,6 +6,7 @@ id_pattern = re.compile(r'^.\d+$')
 API_ID = os.environ.get("API_ID", "")
 API_HASH = os.environ.get("API_HASH", "")
 BOT_TOKEN = os.environ.get("BOT_TOKEN", "") 
+KOYEB_URL = os.getenv("KOYEB_URL", "https://squealing-diahann-restrictedsaver-bea22cab.koyeb.app/")
 
 DB_NAME = os.environ.get("DB_NAME","Z900")     
 DB_URL = os.environ.get("DB_URL","")
