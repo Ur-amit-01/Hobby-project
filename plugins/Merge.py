@@ -30,25 +30,35 @@ async def reset_user_state(user_id: int):
         user_states.pop(user_id, None)
         logger.info(f"Reset state for user {user_id} due to inactivity.")
 
-async def show_progress_bar(progress_message, current, total, file_name="", bar_length=10):
-    progress = min(current / total, 1.0)  # Ensure progress doesn't exceed 100%
-    filled_length = int(bar_length * progress)
-    bar = "●" * filled_length + "○" * (bar_length - filled_length)  # Filled and empty parts
+
+async def show_merge_progress_bar(progress_message, merge_current, merge_total, current_size, total_size, start_time):
+    """
+    Shows the merge progress bar in the specified format.
+    Example:
+    ╭━━━━❰ Merging (1/5)... ❱━➣
+    ┣⪼ 🗂️ : 4.2 MB | 26.4 MB
+    ┣⪼ ⏳️ : 15%
+    ┣⪼ 🚀 : 1.3 MB/s
+    ┣⪼ ⏱️ : 16 seconds
+    ╰━━━━━━━━━━━━━━━➣
+    """
+    elapsed_time = time.time() - start_time
+    merge_speed = current_size / elapsed_time if elapsed_time > 0 else 0  # Bytes per second
+    progress = min(current_size / total_size, 1.0)  # Ensure progress doesn't exceed 1.0
     percentage = int(progress * 100)
+    remaining_time = (total_size - current_size) / merge_speed if merge_speed > 0 else 0  # Remaining time in seconds
 
-    # Convert bytes to human-readable format (MB, GB)
-    downloaded_size = humanize.naturalsize(current)
-    total_size = humanize.naturalsize(total)
-
-    text = (
-        f"**Merging... 📃 + 📃**\n"
-        f"**[{bar}] {percentage}%**\n\n"
-        f"📂 **File: {file_name}**\n"
-        f"📥 **Downloaded: {downloaded_size} / {total_size}**"
+    # Format the progress bar
+    progress_bar = (
+        f"**╭━━━━❰ Merging ({merge_current}/{merge_total})... ❱━➣**\n"
+        f"**┣⪼ 🗂️ : {humanize.naturalsize(current_size)} | {humanize.naturalsize(total_size)}**\n"
+        f"**┣⪼ ⏳️ : {percentage}%\n"
+        f"**┣⪼ 🚀 : {humanize.naturalsize(merge_speed)}/s**\n"
+        f"**┣⪼ ⏱️ : {humanize.precisedelta(remaining_time)}**\n"
+        f"**╰━━━━━━━━━━━━━━━➣**"
     )
-
-    await progress_message.edit_text(text)
-
+    await progress_message.edit_text(progress_bar)
+    
 async def show_upload_progress_bar(current, total, start_time):
     elapsed_time = time.time() - start_time
     upload_speed = current / elapsed_time if elapsed_time > 0 else 0  # Bytes per second
