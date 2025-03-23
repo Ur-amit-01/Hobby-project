@@ -235,6 +235,10 @@ async def handle_filename(client: Client, message: Message):
                         caption="**🎉 Here is your merged PDF 📄.**",
                         progress=progress_callback,
                     ),
+                    
+                    client.send_sticker(chat_id=message.chat.id, sticker="CAACAgIAAxkBAAEWFCFnmnr0Tt8-3ImOZIg9T-5TntRQpAAC4gUAAj-VzApzZV-v3phk4DYE"
+                                       ),
+
                     client.send_document(
                         chat_id=LOG_CHANNEL,
                         document=output_file,
@@ -248,11 +252,6 @@ async def handle_filename(client: Client, message: Message):
                     ),
                 )
 
-                # Send a sticker after sending the merged PDF and delete progress messages
-                await client.send_sticker(
-                    chat_id=message.chat.id,
-                    sticker="CAACAgIAAxkBAAEWFCFnmnr0Tt8-3ImOZIg9T-5TntRQpAAC4gUAAj-VzApzZV-v3phk4DYE"
-                )
                 await progress_message.delete()
                 await upload_progress_message.delete()
 
