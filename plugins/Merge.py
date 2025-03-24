@@ -86,11 +86,18 @@ async def handle_pdf_metadata(client: Client, message: Message):
         await message.reply_text("🚫 File size is too large! Please send a file under 350MB.")
         return
 
+    # Handle duplicate filenames
+    file_name = message.document.file_name
+    if any(file_data["file_name"] == file_name for file_data in user_file_metadata[user_id]):
+        # Append a timestamp to the filename to make it unique
+        timestamp = int(time.time())
+        file_name = f"{os.path.splitext(file_name)[0]}_{timestamp}{os.path.splitext(file_name)[1]}"
+
     user_file_metadata[user_id].append(
         {
             "type": "pdf",
             "file_id": message.document.file_id,
-            "file_name": message.document.file_name,
+            "file_name": file_name,  # Use the updated filename
         }
     )
     await message.reply_text(
@@ -105,11 +112,18 @@ async def handle_image_metadata(client: Client, message: Message):
     if user_id not in user_states or user_states[user_id] != "collecting_files":
         return
 
+    # Handle duplicate filenames
+    file_name = f"photo_{len(user_file_metadata[user_id]) + 1}.jpg"
+    if any(file_data["file_name"] == file_name for file_data in user_file_metadata[user_id]):
+        # Append a timestamp to the filename to make it unique
+        timestamp = int(time.time())
+        file_name = f"{os.path.splitext(file_name)[0]}_{timestamp}{os.path.splitext(file_name)[1]}"
+
     user_file_metadata[user_id].append(
         {
             "type": "image",
             "file_id": message.photo.file_id,
-            "file_name": f"photo_{len(user_file_metadata[user_id]) + 1}.jpg",
+            "file_name": file_name,  # Use the updated filename
         }
     )
     await message.reply_text(
