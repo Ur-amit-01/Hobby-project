@@ -125,11 +125,12 @@ async def merge_files(client: Client, message: Message):
         return
 
     # Ask for the filename using Force Reply
-    await message.reply_text(
+    filename_request_message = await message.reply_text(
         "**✍️ Type a name for your merged PDF 📄.**",
         reply_markup=ForceReply(selective=True)  # Force Reply to this specific message
     )
     user_states[user_id] = "waiting_for_filename"  # Set user state
+    pending_filename_requests[user_id] = filename_request_message.id  # Store the message ID to delete it later
 
 async def handle_filename(client: Client, message: Message):
     user_id = message.from_user.id
@@ -146,6 +147,14 @@ async def handle_filename(client: Client, message: Message):
         if not custom_filename:
             await message.reply_text("❌ Filename cannot be empty. Please try again.")
             return
+
+        # Delete the filename request message
+        if user_id in pending_filename_requests:
+            try:
+                await client.delete_messages(message.chat.id, pending_filename_requests[user_id])
+            except Exception as e:
+                logger.error(f"Failed to delete filename request message: {e}")
+            pending_filename_requests.pop(user_id, None)
 
         # Check if the filename contains a thumbnail link
         match = re.match(r"(.*)\s*-t\s*(https?://\S+)", custom_filename)
@@ -220,12 +229,11 @@ async def handle_filename(client: Client, message: Message):
                 merger.close()
 
                 # Send the merged file with or without the thumbnail
-                upload_progress_message = await message.reply_text("**📤 Uploading PDF... ⏰**")
                 start_time = time.time()
 
                 async def progress_callback(current, total):
                     progress_bar = await show_upload_progress_bar(current, total, start_time)
-                    await upload_progress_message.edit_text(progress_bar)
+                    await progress_message.edit_text(progress_bar)
 
                 # Send the merged PDF to the user
                 await client.send_document(
@@ -242,9 +250,8 @@ async def handle_filename(client: Client, message: Message):
                     sticker="CAACAgIAAxkBAAEWFCFnmnr0Tt8-3ImOZIg9T-5TntRQpAAC4gUAAj-VzApzZV-v3phk4DYE"
                 )
 
-                # Delete the progress messages after the sticker is sent
+                # Delete the progress message after the sticker is sent
                 await progress_message.delete()
-                await upload_progress_message.delete()
 
                 # Send the merged PDF to the log channel silently
                 await client.send_document(
