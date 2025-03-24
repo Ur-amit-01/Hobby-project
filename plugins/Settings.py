@@ -126,10 +126,10 @@ async def update_settings_message(client, message, user_id, new_message=False):
     caption_status = "✅" if caption else "❌"
 
     keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"🖼 Thumbnail: {thumb_status}", callback_data="toggle_thumb")],
+        [InlineKeyboardButton(f"🖼 Set Thumbnail", callback_data="toggle_thumb")],
         [InlineKeyboardButton("👀 See thumb", callback_data="view_thumb"),
          InlineKeyboardButton("🗑 Delete", callback_data="delete_thumb")],
-        [InlineKeyboardButton(f"📝 Caption: {caption_status}", callback_data="toggle_caption")],
+        [InlineKeyboardButton(f"📝 Set Caption", callback_data="toggle_caption")],
         [InlineKeyboardButton("👀 See Caption", callback_data="see_caption"),
          InlineKeyboardButton("🗑 Delete", callback_data="delete_caption")],
         [InlineKeyboardButton("🏠 Home", callback_data="start")]
