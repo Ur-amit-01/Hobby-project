@@ -16,7 +16,7 @@ def ping_self():
             logging.info(f"Pinged self: {response.status_code}")
         except Exception as e:
             logging.error(f"Failed to ping self: {e}")
-        time.sleep(210)  # Ping every 3.5 minutes
+        time.sleep(150)  # Ping every 3.5 minutes
 
 def start_pinging():
     t = threading.Thread(target=ping_self)
