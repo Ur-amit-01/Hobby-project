@@ -55,7 +55,7 @@ async def show_upload_progress_bar(current, total, start_time):
         f"**┣⪼ ⏱️ : {humanize.precisedelta(remaining_time)}**\n"
         f"**╰━━━━━━━━━━━━━━━➣**"
     )
-    await progress_message.edit_text(progress_bar)
+    return progress_bar
 
 async def start_file_collection(client: Client, message: Message):
     user_id = message.from_user.id
