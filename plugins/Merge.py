@@ -195,7 +195,7 @@ async def handle_filename(client: Client, message: Message):
                     thumbnail_path = None  # Fallback to no thumbnail
 
         # Proceed to merge the files
-        progress_message = await message.reply_text("**🛠️ Merging files... Please wait... ⏰**")
+        progress_message = await message.reply_text("**🛠️ Initiating merging process...**")
 
         try:
             with tempfile.TemporaryDirectory() as temp_dir:
