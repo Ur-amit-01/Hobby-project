@@ -155,6 +155,9 @@ async def handle_filename(client: Client, message: Message):
             await message.reply_text("❌ Filename cannot be empty. Please try again.")
             return
 
+        # Delete the ForceReply message to stop further replies
+        await message.reply_to_message.delete()
+
         # Check if the filename contains a thumbnail link
         match = re.match(r"(.*)\s*-t\s*(https?://\S+)", custom_filename)
         if match:
@@ -278,6 +281,7 @@ async def handle_filename(client: Client, message: Message):
             # Clean up temporary files
             if thumbnail_path and os.path.exists(thumbnail_path):
                 os.remove(thumbnail_path)
+
 
 # Register handlers
 @Client.on_message(filters.command(["merge"]))
