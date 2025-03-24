@@ -38,7 +38,7 @@ async def show_progress_bar(progress_message, current, total, bar_length=10):
     text = f"**Merging... 📃 + 📃**\n`[{bar}]` {percentage}%"
     await progress_message.edit_text(text)
 
-async def show_upload_progress_bar(progress_message, current, total, start_time):
+async def show_upload_progress_bar(current, total, start_time):
     elapsed_time = time.time() - start_time
     upload_speed = current / elapsed_time if elapsed_time > 0 else 0  # Bytes per second
     progress = min(current / total, 1.0)  # Ensure progress doesn't exceed 1.0
@@ -93,7 +93,6 @@ async def handle_pdf_metadata(client: Client, message: Message):
             "file_name": message.document.file_name,
         }
     )
-
     await message.reply_text(
         f"•**ᴛᴏᴛᴀʟ ꜰɪʟᴇꜱ: {len(user_file_metadata[user_id])} 📄**\n"
         "•**/done: ᴛᴏ ᴍᴇʀɢᴇ ᴀʟʟ ꜰɪʟᴇꜱ ✅**"
@@ -113,7 +112,6 @@ async def handle_image_metadata(client: Client, message: Message):
             "file_name": f"photo_{len(user_file_metadata[user_id]) + 1}.jpg",
         }
     )
-
     await message.reply_text(
         f"•**ᴛᴏᴛᴀʟ ɪᴍᴀɢᴇꜱ: {len(user_file_metadata[user_id])} 🖼️\n"
         "•**/done: ᴛᴏ ᴍᴇʀɢᴇ ᴀʟʟ ɪᴍᴀɢᴇꜱ ✅**"
@@ -148,9 +146,6 @@ async def handle_filename(client: Client, message: Message):
         if not custom_filename:
             await message.reply_text("❌ Filename cannot be empty. Please try again.")
             return
-
-        # Delete the ForceReply message to stop further replies
-        await message.reply_to_message.delete()
 
         # Check if the filename contains a thumbnail link
         match = re.match(r"(.*)\s*-t\s*(https?://\S+)", custom_filename)
@@ -208,52 +203,28 @@ async def handle_filename(client: Client, message: Message):
                 merger = PdfMerger()
 
                 total_files = len(user_file_metadata[user_id])
-                if total_files == 0:
-                    await message.reply_text("❌ No files to merge. Please add files first.")
-                    return
-
                 for index, file_data in enumerate(user_file_metadata[user_id], start=1):
                     if file_data["type"] == "pdf":
                         file_path = await client.download_media(file_data["file_id"], file_name=os.path.join(temp_dir, file_data["file_name"]))
-                        if not os.path.exists(file_path):
-                            await message.reply_text(f"❌ Failed to download file: {file_data['file_name']}")
-                            return
-                        try:
-                            merger.append(file_path)
-                        except Exception as e:
-                            logger.error(f"Failed to append file {file_data['file_name']}: {e}")
-                            await message.reply_text(f"❌ Failed to append file: {file_data['file_name']}")
-                            return
+                        merger.append(file_path)
+                        await show_progress_bar(progress_message, index, total_files)  # Update progress bar
                     elif file_data["type"] == "image":
                         img_path = await client.download_media(file_data["file_id"], file_name=os.path.join(temp_dir, file_data["file_name"]))
-                        if not os.path.exists(img_path):
-                            await message.reply_text(f"❌ Failed to download image: {file_data['file_name']}")
-                            return
-                        try:
-                            image = Image.open(img_path).convert("RGB")
-                            img_pdf_path = os.path.join(temp_dir, f"{os.path.splitext(file_data['file_name'])[0]}.pdf")
-                            image.save(img_pdf_path, "PDF")
-                            merger.append(img_pdf_path)
-                        except Exception as e:
-                            logger.error(f"Failed to append image {file_data['file_name']}: {e}")
-                            await message.reply_text(f"❌ Failed to append image: {file_data['file_name']}")
-                            return
+                        image = Image.open(img_path).convert("RGB")
+                        img_pdf_path = os.path.join(temp_dir, f"{os.path.splitext(file_data['file_name'])[0]}.pdf")
+                        image.save(img_pdf_path, "PDF")
+                        merger.append(img_pdf_path)
+                        await show_progress_bar(progress_message, index, total_files)  # Update progress bar
 
-                    await show_progress_bar(progress_message, index, total_files)  # Update progress bar
-
-                if merger:
-                    merger.write(output_file)
-                    merger.close()
-                else:
-                    await message.reply_text("❌ Failed to merge files: No valid merger object.")
-                    return
+                merger.write(output_file)
+                merger.close()
 
                 # Send the merged file with or without the thumbnail
                 upload_progress_message = await message.reply_text("**📤 Uploading PDF... ⏰**")
                 start_time = time.time()
 
                 async def progress_callback(current, total):
-                    progress_bar = await show_upload_progress_bar(upload_progress_message, current, total, start_time)
+                    progress_bar = await show_upload_progress_bar(current, total, start_time)
                     await upload_progress_message.edit_text(progress_bar)
 
                 # Send the merged PDF to the user
@@ -335,3 +306,4 @@ async def handle_filename_handler(client: Client, message: Message):
         and message.reply_to_message.from_user.is_self  # Ensure it's a reply to the bot's message
     ):
         await handle_filename(client, message)
+        
