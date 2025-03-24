@@ -94,9 +94,6 @@ async def handle_pdf_metadata(client: Client, message: Message):
         }
     )
 
-    # Add a small delay to avoid cluttering
-    await asyncio.sleep(0.1)  # 0.1 second delay
-
     await message.reply_text(
         f"•**ᴛᴏᴛᴀʟ ꜰɪʟᴇꜱ: {len(user_file_metadata[user_id])} 📄**\n"
         "•**/done: ᴛᴏ ᴍᴇʀɢᴇ ᴀʟʟ ꜰɪʟᴇꜱ ✅**"
@@ -116,9 +113,6 @@ async def handle_image_metadata(client: Client, message: Message):
             "file_name": f"photo_{len(user_file_metadata[user_id]) + 1}.jpg",
         }
     )
-
-    # Add a small delay to avoid cluttering
-    await asyncio.sleep(0.1)  # 0.1 second delay
 
     await message.reply_text(
         f"•**ᴛᴏᴛᴀʟ ɪᴍᴀɢᴇꜱ: {len(user_file_metadata[user_id])} 🖼️\n"
