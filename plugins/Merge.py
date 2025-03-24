@@ -65,7 +65,7 @@ async def start_file_collection(client: Client, message: Message):
         "**📤 ɴᴏᴡ ꜱᴇɴᴅ ʏᴏᴜʀ ғɪʟᴇs ɪɴ sᴇǫᴜᴇɴᴄᴇ !! 🧾**"
     )
     # Start a timer to reset the state after 5 minutes
-    asyncio.create_task(reset_user_state(user_id))
+    asyncio.create_task(reset_user_state(user_id)) 
 
 async def handle_pdf_metadata(client: Client, message: Message):
     user_id = message.from_user.id
@@ -93,6 +93,10 @@ async def handle_pdf_metadata(client: Client, message: Message):
             "file_name": message.document.file_name,
         }
     )
+
+    # Add a small delay to avoid cluttering
+    await asyncio.sleep(0.1)  # 0.1 second delay
+
     await message.reply_text(
         f"•**ᴛᴏᴛᴀʟ ꜰɪʟᴇꜱ: {len(user_file_metadata[user_id])} 📄**\n"
         "•**/done: ᴛᴏ ᴍᴇʀɢᴇ ᴀʟʟ ꜰɪʟᴇꜱ ✅**"
@@ -112,11 +116,15 @@ async def handle_image_metadata(client: Client, message: Message):
             "file_name": f"photo_{len(user_file_metadata[user_id]) + 1}.jpg",
         }
     )
+
+    # Add a small delay to avoid cluttering
+    await asyncio.sleep(0.1)  # 0.1 second delay
+
     await message.reply_text(
         f"•**ᴛᴏᴛᴀʟ ɪᴍᴀɢᴇꜱ: {len(user_file_metadata[user_id])} 🖼️\n"
         "•**/done: ᴛᴏ ᴍᴇʀɢᴇ ᴀʟʟ ɪᴍᴀɢᴇꜱ ✅**"
     )
-
+    
 async def merge_files(client: Client, message: Message):
     user_id = message.from_user.id
 
