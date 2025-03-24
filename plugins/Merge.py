@@ -48,12 +48,12 @@ async def show_upload_progress_bar(current, total, start_time):
 
     # Format the progress bar
     progress_bar = (
-        f"**╭━━━━❰ Uploading... ❱━➣**\n"
+        f"**╭━━━━━━❰ Uploading... ❱━━➣**\n"
         f"**┣⪼ 🗂️ : {humanize.naturalsize(current)} | {humanize.naturalsize(total)}**\n"
         f"**┣⪼ ⏳️ : {percentage}%\n"
         f"**┣⪼ 🚀 : {humanize.naturalsize(upload_speed)}/s**\n"
         f"**┣⪼ ⏱️ : {humanize.precisedelta(remaining_time)}**\n"
-        f"**╰━━━━━━━━━━━━━━━➣**"
+        f"**╰━━━━━━━━━━━━━━━━➣**"
     )
     await progress_message.edit_text(progress_bar)
 
