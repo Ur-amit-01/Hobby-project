@@ -1,6 +1,5 @@
 import random
 import requests
-from datetime import datetime
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
 from config import LOG_CHANNEL
@@ -41,12 +40,10 @@ async def send_wallpaper(client, message):
     if not image_url:
         await message.reply_text("⚠️ No wallpapers found. Check the repository.")
         return
-    
-    timestamp = datetime.now().strftime("%H:%M:%S %d-%m-%Y")  # Get the current time
-    
+     
     await message.reply_photo(
         photo=image_url,
-        caption=f"**🖼️ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ!**\n\n⏰ **ʟᴀꜱᴛ ʀᴇꜰʀᴇꜱʜᴇᴅ: {timestamp}**",
+        caption=f"**🖼️ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ!**",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ", callback_data="refresh_wallpaper")]
         ])
@@ -61,14 +58,13 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
         await query.message.reply_text("⚠️ No wallpapers available.")
         return
     
-    timestamp = datetime.now().strftime("%H:%M:%S %d-%m-%Y")  # Get current time
     user = query.from_user  # Get user details
     
     try:
         # Edit the main message to update the wallpaper and timestamp
         await query.message.edit_media(
             media=InputMediaPhoto(new_image_url),
-            caption=f"**🖼️ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ!**\n\n⏰ **ʟᴀꜱᴛ ʀᴇꜰʀᴇꜱʜᴇᴅ: {timestamp}**",
+            caption=f"**🖼️ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ!**",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ", callback_data="refresh_wallpaper")]
             ])
@@ -76,10 +72,9 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
 
         # Send log message to Log Channel
         log_message = f"""
-🖼️ **Wallpaper Refreshed**
+> 🖼️ **Wallpaper Refreshed**
 👤 **User:** [{user.first_name}](tg://user?id={user.id})
 🆔 **User ID:** `{user.id}`
-🕒 **Timestamp:** `{timestamp}`
 """
         await client.send_message(LOG_CHANNEL, log_message)
 
