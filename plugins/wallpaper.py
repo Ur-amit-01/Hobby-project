@@ -53,9 +53,11 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
     if not new_image_url:
         await query.answer("⚠️ No new wallpapers found.", show_alert=True)
         return
+        
+    ist = pytz.timezone('Asia/Kolkata')
+    last_updated = datetime.now(pytz.utc).astimezone(ist).strftime("%I:%M %p | %d %B")  # Format: 02:30 PM | 25 March
 
-    last_updated = datetime.now().strftime("%I:%M %p | %d %B ")  # Format: 25 March 2025 | 02:30 PM
-
+    
     await query.message.edit_media(
         media=InputMediaPhoto(
             media=new_image_url, 
