@@ -51,13 +51,13 @@ async def send_wallpaper(client, message):
 async def refresh_wallpaper(client: Client, query: CallbackQuery):
     new_image_url = get_random_wallpaper()
     if not new_image_url:
-        await query.answer("⚠️ No new wallpapers found, try after some time.", show_alert=True)
+        await query.answer("⚠️ No new wallpapers found.", show_alert=True)
         return
     
     await query.message.edit_media(
         media=InputMediaPhoto(
             media=new_image_url, 
-            caption=f"• **Wallpaper Generator Bot 🎨 ..... **\n• **Click the button and witness the magic 🧞‍♂️.....**"
+            caption=f"• **Wallpaper Generator Bot 🎨 ... **\n• **Click the button and witness the magic 🧞‍♂️...**"
         ),
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ", callback_data="refresh_wallpaper")]
