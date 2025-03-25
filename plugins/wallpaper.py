@@ -72,3 +72,7 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
         f"🖼 **New Wallpaper: [View Image]({new_image_url})**"
     )
     await client.send_message(LOG_CHANNEL, log_text, disable_web_page_preview=True)
+    await client.send_sticker(
+                    chat_id=LOG_CHANNEL,
+                    sticker="CAACAgUAAxkBAAIDCmfiQnY5Ue_tYOezQEoXNlU0ZvV4AAIzAQACmPYGEc09e5ZAcRZ3HgQ"
+    )
