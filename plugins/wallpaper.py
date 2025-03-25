@@ -60,6 +60,7 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
     try:
         await query.message.edit_media(
             media=InputMediaPhoto(new_image_url),
+            caption="Here's a minimalistic wallpaper! Click 🔄 for a new one.",
             reply_markup=InlineKeyboardMarkup([
                 [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_wallpaper")]
             ])
