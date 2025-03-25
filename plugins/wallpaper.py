@@ -1,24 +1,29 @@
+
 import random
 import requests
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
 from datetime import datetime
-from config import LOG_CHANNEL
+from config import LOG_CHANNEL, GITHUB_TOKEN
 
 # GitHub API URL to fetch file list from the images folder
 GITHUB_API_URL = "https://api.github.com/repos/Ur-amit-01/minimalistic-wallpaper-collection/contents/images"
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/Ur-amit-01/minimalistic-wallpaper-collection/main/images/"  
+ 
+HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"}
 
-# Function to get the list of image filenames dynamically
 def get_wallpaper_list():
     try:
-        response = requests.get(GITHUB_API_URL)
+        response = requests.get(GITHUB_API_URL, headers=HEADERS)
+        print("GitHub API Status:", response.status_code)
         if response.status_code == 200:
             files = response.json()
             return [file["name"] for file in files if file["name"].endswith((".jpg", ".png"))]
+        elif response.status_code == 403:
+            print("⚠️ GitHub API rate limit hit! Try again later.")
         else:
             print("Failed to fetch file list:", response.text)
-            return []
+        return []
     except Exception as e:
         print("Error fetching wallpapers:", str(e))
         return []
@@ -51,7 +56,7 @@ async def send_wallpaper(client, message):
 async def refresh_wallpaper(client: Client, query: CallbackQuery):
     new_image_url = get_random_wallpaper()
     if not new_image_url:
-        await query.answer("⚠️ No new wallpapers found.", show_alert=True)
+        await query.answer("⚠️ GitHub API rate limit hit! Try again later.", show_alert=True)
         return
     
     await query.message.edit_media(
