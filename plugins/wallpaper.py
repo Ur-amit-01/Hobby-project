@@ -1,7 +1,7 @@
 import random
 import requests
 from pyrogram import Client, filters
-from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
 
 
 # GitHub API URL to fetch file list from the images folder
@@ -55,7 +55,7 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
         return
     
     await query.message.edit_media(
-        media=new_image_url,
+        media=InputMediaPhoto(media=new_image_url),
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_wallpaper")]
         ])
