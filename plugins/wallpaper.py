@@ -4,7 +4,6 @@ from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
 from datetime import datetime
 from config import LOG_CHANNEL
-import pytz
 
 # GitHub API URL to fetch file list from the images folder
 GITHUB_API_URL = "https://api.github.com/repos/Ur-amit-01/minimalistic-wallpaper-collection/contents/images"
@@ -54,15 +53,11 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
     if not new_image_url:
         await query.answer("⚠️ No new wallpapers found.", show_alert=True)
         return
-        
-    ist = pytz.timezone('Asia/Kolkata')
-    last_updated = datetime.now(pytz.utc).astimezone(ist).strftime("%I:%M %p | %d %B")  # Format: 02:30 PM | 25 March
-
     
     await query.message.edit_media(
         media=InputMediaPhoto(
             media=new_image_url, 
-            caption=f"> **✨ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ! **\n> 🕒 **ʟᴀꜱᴛ ᴜᴘᴅᴀᴛᴇᴅ : {last_updated}**"
+            caption=f"• **Wallpaper Generator Bot 🎨 ..... **\n• **Click the button and witness the magic 🧞‍♂️.....**"
         ),
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ", callback_data="refresh_wallpaper")]
