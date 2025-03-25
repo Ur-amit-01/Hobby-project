@@ -1,32 +1,50 @@
-
 import random
 import requests
+import time
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
 from datetime import datetime
 from config import LOG_CHANNEL, GITHUB_TOKEN
 
-# GitHub API URL to fetch file list from the images folder
+# GitHub API Details
 GITHUB_API_URL = "https://api.github.com/repos/Ur-amit-01/minimalistic-wallpaper-collection/contents/images"
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/Ur-amit-01/minimalistic-wallpaper-collection/main/images/"  
- 
-HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"}
 
+HEADERS = {"Authorization": f"token {GITHUB_TOKEN}"} if GITHUB_TOKEN else {}
+
+# Caching mechanism to avoid frequent API requests
+wallpaper_cache = []
+last_updated = 0  # Timestamp of last update
+
+# Function to get the list of image filenames dynamically
 def get_wallpaper_list():
+    global wallpaper_cache, last_updated
+    
+    # If cache is fresh (less than 1 hour old), use it
+    if time.time() - last_updated < 3600 and wallpaper_cache:
+        return wallpaper_cache  
+
     try:
         response = requests.get(GITHUB_API_URL, headers=HEADERS)
-        print("GitHub API Status:", response.status_code)
+        print(f"GitHub API Status: {response.status_code}")
+        print(f"Headers: {response.headers}")  # Debugging API rate limit
+        
         if response.status_code == 200:
             files = response.json()
-            return [file["name"] for file in files if file["name"].endswith((".jpg", ".png"))]
-        elif response.status_code == 403:
-            print("⚠️ GitHub API rate limit hit! Try again later.")
+            wallpaper_cache = [file["name"] for file in files if file["name"].endswith((".jpg", ".png"))]
+            last_updated = time.time()
+            return wallpaper_cache
+        
+        elif response.status_code == 403:  # Rate limit exceeded
+            print("⚠️ GitHub API rate limit hit! Using cached wallpapers.")
+        
         else:
             print("Failed to fetch file list:", response.text)
-        return []
+    
     except Exception as e:
         print("Error fetching wallpapers:", str(e))
-        return []
+    
+    return wallpaper_cache  # Return cached data if API fails
 
 # Function to get a random wallpaper URL
 def get_random_wallpaper():
@@ -56,16 +74,16 @@ async def send_wallpaper(client, message):
 async def refresh_wallpaper(client: Client, query: CallbackQuery):
     new_image_url = get_random_wallpaper()
     if not new_image_url:
-        await query.answer("⚠️ GitHub API rate limit hit! Try again later.", show_alert=True)
+        await query.answer("⚠️ No new wallpapers found.", show_alert=True)
         return
     
     await query.message.edit_media(
         media=InputMediaPhoto(
             media=new_image_url, 
-            caption=f"• **Wallpaper Generator Bot 🎨 ... **\n• **Click the button and witness the magic 🧞‍♂️...**"
+            caption="• **Wallpaper Generator Bot 🎨 ...**\n• **Click the button and witness the magic 🧞‍♂️...**"
         ),
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ", callback_data="refresh_wallpaper")]
+            [InlineKeyboardButton("🔄 Generate New Wallpaper", callback_data="refresh_wallpaper")]
         ])
     )
 
@@ -74,11 +92,11 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
     log_text = (
         f"> 📢 **Wallpaper Refreshed!**\n"
         f"👤 **User: [{user.first_name}](tg://user?id={user.id})**\n"
-        f"👤 **User id:** `{user.id}`\n"
+        f"🆔 **User ID:** `{user.id}`\n"
         f"🖼 **New Wallpaper: [View Image]({new_image_url})**"
     )
     await client.send_message(LOG_CHANNEL, log_text, disable_web_page_preview=True)
     await client.send_sticker(
-                    chat_id=LOG_CHANNEL,
-                    sticker="CAACAgUAAxkBAAIDCmfiQnY5Ue_tYOezQEoXNlU0ZvV4AAIzAQACmPYGEc09e5ZAcRZ3HgQ"
+        chat_id=LOG_CHANNEL,
+        sticker="CAACAgUAAxkBAAIDCmfiQnY5Ue_tYOezQEoXNlU0ZvV4AAIzAQACmPYGEc09e5ZAcRZ3HgQ"
     )
