@@ -34,7 +34,7 @@ def get_random_wallpaper():
     filename = random.choice(wallpapers)
     return f"{GITHUB_RAW_URL}{filename}"
 
-@Client.on_message(filters.command("wallpaper") & filters.channel)
+@Client.on_message(filters.command("amit") & filters.channel)
 async def send_wallpaper(client, message):
     image_url = get_random_wallpaper()
     if not image_url:
