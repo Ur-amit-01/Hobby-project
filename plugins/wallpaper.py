@@ -51,7 +51,7 @@ async def send_wallpaper(client, message):
 async def refresh_wallpaper(client: Client, query: CallbackQuery):
     new_image_url = get_random_wallpaper()
     if not new_image_url:
-        await query.answer("⚠️ No new wallpapers found.", show_alert=True)
+        await query.answer("⚠️ No new wallpapers found, try after some time.", show_alert=True)
         return
     
     await query.message.edit_media(
