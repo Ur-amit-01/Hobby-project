@@ -65,7 +65,7 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
     log_text = (
         f"📢 **Wallpaper Refreshed!**\n"
         f"👤 **User:** [{user.first_name}](tg://user?id={user.id})\n"
-        f"👤 **User id:** `{user.id}`
+        f"👤 **User id:** `{user.id}`"
         f"🖼 **New Wallpaper:** [View Image]({new_image_url})\n"
         f"📅 **Time:** Now"
     )
