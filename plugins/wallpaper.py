@@ -2,6 +2,7 @@ import random
 import requests
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
+from datetime import datetime
 from config import LOG_CHANNEL
 
 # GitHub API URL to fetch file list from the images folder
@@ -46,18 +47,20 @@ async def send_wallpaper(client, message):
         ])
     )
 
-# Callback function to refresh the wallpaper
 @Client.on_callback_query(filters.regex("refresh_wallpaper"))
 async def refresh_wallpaper(client: Client, query: CallbackQuery):
     new_image_url = get_random_wallpaper()
     if not new_image_url:
         await query.answer("⚠️ No new wallpapers found.", show_alert=True)
         return
-    
-    
+
+    last_updated = datetime.now().strftime("%d %B %Y | %I:%M %p")  # Format: 25 March 2025 | 02:30 PM
 
     await query.message.edit_media(
-        media=InputMediaPhoto(media=new_image_url, caption=f"**✨ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ! **"),
+        media=InputMediaPhoto(
+            media=new_image_url, 
+            caption=f"**✨ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ! **\n\n🕒 *ʟᴀꜱᴛ ᴜᴘᴅᴀᴛᴇᴅ : {last_updated}*"
+        ),
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ", callback_data="refresh_wallpaper")]
         ])
