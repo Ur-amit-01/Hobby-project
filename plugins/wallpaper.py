@@ -1,5 +1,6 @@
 import random
 import requests
+from datetime import datetime
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
 
@@ -42,7 +43,7 @@ async def send_wallpaper(client, message):
     
     await message.reply_photo(
         photo=image_url,
-        caption="Here's a minimalistic wallpaper! Click 🔄 for a new one.",
+        caption=f"**ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ! 🧞‍♂️**\n\n",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_wallpaper")]
         ])
@@ -57,12 +58,15 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
         await query.message.reply_text("⚠️ No wallpapers available.")
         return
     
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    user = query.from_user.first_name  # Get the name of the user who clicked refresh
+    
     try:
         await query.message.edit_media(
             media=InputMediaPhoto(new_image_url),
-            caption="Here's a minimalistic wallpaper! Click 🔄 for a new one.",
+            caption=f"• **ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ! **🖼️\n\n• **ʟᴀꜱᴛ ᴜᴘᴅᴀᴛᴇᴅ ⏰: `{timestamp}`\n• **Updated by 🧞‍♂️:** `{user}`",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_wallpaper")]
+                [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ ", callback_data="refresh_wallpaper")]
             ])
         )
     except Exception as e:
