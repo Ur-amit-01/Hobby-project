@@ -3,6 +3,7 @@ import requests
 from datetime import datetime
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
+from config import LOG_CHANNEL
 
 GITHUB_API_URL = "https://api.github.com/repos/Ur-amit-01/minimalistic-wallpaper-collection/contents/images"
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/Ur-amit-01/minimalistic-wallpaper-collection/main/images/"
@@ -41,11 +42,13 @@ async def send_wallpaper(client, message):
         await message.reply_text("⚠️ No wallpapers found. Check the repository.")
         return
     
+    timestamp = datetime.now().strftime("[%H:%M:%S] [%d-%m_%Y]")  # Get the current time
+    
     await message.reply_photo(
         photo=image_url,
-        caption=f"**ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ! 🧞‍♂️**\n\n",
+        caption=f"**🖼️ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ!**\n\n⏰ **ʟᴀꜱᴛ ʀᴇꜰʀᴇꜱʜᴇᴅ: {timestamp}**",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_wallpaper")]
+            [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ", callback_data="refresh_wallpaper")]
         ])
     )
 
@@ -58,16 +61,27 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
         await query.message.reply_text("⚠️ No wallpapers available.")
         return
     
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    user = query.from_user.first_name  # Get the name of the user who clicked refresh
+    timestamp = datetime.now().strftime("[%H:%M:%S] [%d-%m_%Y]")  # Get current time
+    user = query.from_user  # Get user details
     
     try:
+        # Edit the main message to update the wallpaper and timestamp
         await query.message.edit_media(
             media=InputMediaPhoto(new_image_url),
-            caption=f"• **ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ! **🖼️\n\n• **ʟᴀꜱᴛ ᴜᴘᴅᴀᴛᴇᴅ ⏰: `{timestamp}`\n• **Updated by 🧞‍♂️:** `{user}`",
+            caption=f"**🖼️ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ!**\n\n⏰ **ʟᴀꜱᴛ ʀᴇꜰʀᴇꜱʜᴇᴅ: {timestamp}**",
             reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ ", callback_data="refresh_wallpaper")]
+                [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ", callback_data="refresh_wallpaper")]
             ])
         )
+
+        # Send log message to Log Channel
+        log_message = f"""
+🖼️ **Wallpaper Refreshed**
+👤 **User:** [{user.first_name}](tg://user?id={user.id})
+🆔 **User ID:** `{user.id}`
+🕒 **Timestamp:** `{timestamp}`
+"""
+        await client.send_message(LOG_CHANNEL, log_message)
+
     except Exception as e:
         await query.message.reply_text(f"⚠️ Error: {str(e)}")
