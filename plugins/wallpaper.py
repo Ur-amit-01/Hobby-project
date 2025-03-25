@@ -54,7 +54,7 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
         await query.answer("⚠️ No new wallpapers found.", show_alert=True)
         return
 
-    last_updated = datetime.now().strftime("%I:%M %p || %d %B ")  # Format: 25 March 2025 | 02:30 PM
+    last_updated = datetime.now().strftime("%I:%M %p | %d %B ")  # Format: 25 March 2025 | 02:30 PM
 
     await query.message.edit_media(
         media=InputMediaPhoto(
