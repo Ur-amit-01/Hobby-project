@@ -1,13 +1,14 @@
 import random
 import requests
-from datetime import datetime
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
-from config import LOG_CHANNEL
 
+
+# GitHub API URL to fetch file list from the images folder
 GITHUB_API_URL = "https://api.github.com/repos/Ur-amit-01/minimalistic-wallpaper-collection/contents/images"
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/Ur-amit-01/minimalistic-wallpaper-collection/main/images/"
 
+# Function to get the list of image filenames dynamically
 def get_wallpaper_list():
     try:
         response = requests.get(GITHUB_API_URL)
@@ -29,53 +30,34 @@ def get_random_wallpaper():
     filename = random.choice(wallpapers)
     return f"{GITHUB_RAW_URL}{filename}"
 
+# Command to send a wallpaper in a channel
 @Client.on_message(filters.command("wallpaper") & filters.channel)
 async def send_wallpaper(client, message):
     image_url = get_random_wallpaper()
     if not image_url:
-        await message.reply_text("⚠️ No wallpapers found. Check the repository.")
+        await message.reply_text("⚠️ No wallpapers found. Please check the repository.")
         return
-    
-    timestamp = datetime.now().strftime("[%H:%M:%S] [%d-%m_%Y]")  # Get the current time
     
     await message.reply_photo(
         photo=image_url,
-        caption=f"**🖼️ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ!**\n\n⏰ **ʟᴀꜱᴛ ʀᴇꜰʀᴇꜱʜᴇᴅ: {timestamp}**",
+        caption="Here is a minimalistic wallpaper! Click refresh for a new one.",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ", callback_data="refresh_wallpaper")]
+            [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_wallpaper")]
         ])
     )
 
+# Callback function to refresh the wallpaper
 @Client.on_callback_query(filters.regex("refresh_wallpaper"))
 async def refresh_wallpaper(client: Client, query: CallbackQuery):
-    await query.answer()  # Acknowledge button press
-    
     new_image_url = get_random_wallpaper()
     if not new_image_url:
-        await query.message.reply_text("⚠️ No wallpapers available.")
+        await query.answer("⚠️ No new wallpapers found.", show_alert=True)
         return
     
-    timestamp = datetime.now().strftime("[%H:%M:%S] [%d-%m_%Y]")  # Get current time
-    user = query.from_user  # Get user details
+    await query.message.edit_media(
+        media=InputMediaPhoto(media=new_image_url),
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_wallpaper")]
+        ])
+    )
     
-    try:
-        # Edit the main message to update the wallpaper and timestamp
-        await query.message.edit_media(
-            media=InputMediaPhoto(new_image_url),
-            caption=f"**🖼️ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ!**\n\n⏰ **ʟᴀꜱᴛ ʀᴇꜰʀᴇꜱʜᴇᴅ: {timestamp}**",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ", callback_data="refresh_wallpaper")]
-            ])
-        )
-
-        # Send log message to Log Channel
-        log_message = f"""
-🖼️ **Wallpaper Refreshed**
-👤 **User:** [{user.first_name}](tg://user?id={user.id})
-🆔 **User ID:** `{user.id}`
-🕒 **Timestamp:** `{timestamp}`
-"""
-        await client.send_message(LOG_CHANNEL, log_message)
-
-    except Exception as e:
-        await query.message.reply_text(f"⚠️ Error: {str(e)}")
