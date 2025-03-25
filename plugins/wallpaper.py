@@ -8,26 +8,20 @@ from config import LOG_CHANNEL
 GITHUB_API_URL = "https://api.github.com/repos/Ur-amit-01/minimalistic-wallpaper-collection/contents/images"
 GITHUB_RAW_URL = "https://raw.githubusercontent.com/Ur-amit-01/minimalistic-wallpaper-collection/main/images/"
 
-# Cache wallpaper list to avoid hitting GitHub rate limits
-WALLPAPER_CACHE = []
-
 def get_wallpaper_list():
-    global WALLPAPER_CACHE
-    if WALLPAPER_CACHE:  # Return cached list if available
-        return WALLPAPER_CACHE
     try:
         response = requests.get(GITHUB_API_URL)
         if response.status_code == 200:
             files = response.json()
-            WALLPAPER_CACHE = [file["name"] for file in files if file["name"].lower().endswith((".jpg", ".png"))]
-            return WALLPAPER_CACHE
+            return [file["name"] for file in files if file["name"].endswith((".jpg", ".png"))]
         else:
-            print("Failed to fetch wallpapers:", response.text)
+            print("Failed to fetch file list:", response.text)
             return []
     except Exception as e:
-        print("Error:", e)
+        print("Error fetching wallpapers:", str(e))
         return []
 
+# Function to get a random wallpaper URL
 def get_random_wallpaper():
     wallpapers = get_wallpaper_list()
     if not wallpapers:
