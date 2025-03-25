@@ -54,12 +54,12 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
         await query.answer("⚠️ No new wallpapers found.", show_alert=True)
         return
 
-    last_updated = datetime.now().strftime("%d %B %Y | %I:%M %p")  # Format: 25 March 2025 | 02:30 PM
+    last_updated = datetime.now().strftime("%I:%M %p || %d %B ")  # Format: 25 March 2025 | 02:30 PM
 
     await query.message.edit_media(
         media=InputMediaPhoto(
             media=new_image_url, 
-            caption=f"**✨ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ! **\n\n🕒 *ʟᴀꜱᴛ ᴜᴘᴅᴀᴛᴇᴅ : {last_updated}*"
+            caption=f"> **✨ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ! **\n> 🕒 **ʟᴀꜱᴛ ᴜᴘᴅᴀᴛᴇᴅ : {last_updated}**"
         ),
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ", callback_data="refresh_wallpaper")]
