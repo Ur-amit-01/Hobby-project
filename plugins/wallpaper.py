@@ -1,5 +1,6 @@
 import random
 import requests
+from datetime import datetime
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
 from config import LOG_CHANNEL
@@ -40,7 +41,7 @@ async def send_wallpaper(client, message):
     
     await message.reply_photo(
         photo=image_url,
-        caption="✨ Here’s a fresh **Minimalist Wallpaper** for you! 🌿\nTap **Refresh** for another masterpiece! 🎨",
+        caption="✨ Minimalist Vibes! 🔥\nTap **Refresh** for more!",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_wallpaper")]
         ])
@@ -54,20 +55,21 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
         await query.answer("⚠️ No new wallpapers found.", show_alert=True)
         return
     
+    last_updated = datetime.now().strftime("%d-%b %I:%M %p")  # Format: 25-Mar 03:45 PM
+
     await query.message.edit_media(
-        media=InputMediaPhoto(media=new_image_url),
+        media=InputMediaPhoto(media=new_image_url, caption=f"**✨ ʜᴇʀᴇ'ꜱ ᴀ ᴍɪɴɪᴍᴀʟɪꜱᴛɪᴄ ᴡᴀʟʟᴘᴀᴘᴇʀ! **\n> 🕒 **ʟᴀꜱᴛ ᴜᴘᴅᴀᴛᴇᴅ: {last_updated} 🗓️**"),
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🔄 Refresh", callback_data="refresh_wallpaper")]
+            [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ", callback_data="refresh_wallpaper")]
         ])
     )
 
     # Log the action in the LOG_CHANNEL
     user = query.from_user
     log_text = (
-        f"📢 **Wallpaper Refreshed!**\n"
-        f"👤 **User:** [{user.first_name}](tg://user?id={user.id})\n"
-        f"👤 **User id:** `{user.id}`"
-        f"🖼 **New Wallpaper:** [View Image]({new_image_url})\n"
-        f"📅 **Time:** Now"
+        f"> 📢 **Wallpaper Refreshed!**\n"
+        f"👤 **User: [{user.first_name}](tg://user?id={user.id})**\n"
+        f"👤 **User id:** `{user.id}`\n"
+        f"🖼 **New Wallpaper: [View Image]({new_image_url})**"
     )
     await client.send_message(LOG_CHANNEL, log_text, disable_web_page_preview=True)
