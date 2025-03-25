@@ -2,6 +2,7 @@ import random
 import requests
 from pyrogram import Client, filters
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery, InputMediaPhoto
+from config import LOG_CHANNEL
 
 # GitHub API URL to fetch file list from the images folder
 GITHUB_API_URL = "https://api.github.com/repos/Ur-amit-01/minimalistic-wallpaper-collection/contents/images"
