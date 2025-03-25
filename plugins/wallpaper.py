@@ -97,7 +97,7 @@ async def refresh_wallpaper(client: Client, query: CallbackQuery):
             caption="• **Wallpaper Generator Bot 🎨 ...**\n• **Click the button and witness the magic 🧞‍♂️...**"
         ),
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("🔄 Generate New Wallpaper", callback_data="refresh_wallpaper")]
+            [InlineKeyboardButton("🔄 ɢᴇɴᴇʀᴀᴛᴇ ɴᴇᴡ ᴡᴀʟʟᴘᴀᴘᴇʀ", callback_data="refresh_wallpaper")]
         ])
     )
 
