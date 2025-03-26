@@ -8,8 +8,10 @@ from pyrogram.errors import *
 import random
 from plugins.Fsub import auth_check
 from plugins.Settings import *
-
+from plugins.wallpaper import get_random_wallpaper
 # =====================================================================================
+START_PIC = get_random_wallpaper()
+
 @Client.on_message(filters.private & filters.command("start"))
 @auth_check
 async def start(client, message):
