@@ -20,7 +20,7 @@ ERROR_MESSAGE = bool(os.environ.get('ERROR_MESSAGE', False)) # Set True or False
 NEW_REQ_MODE = bool(environ.get('NEW_REQ_MODE', False)) # Set True or False
 SESSION_STRING = os.environ.get("SESSION_STRING", "")
 
-START_PIC = os.environ.get("START_PIC", "https://raw.githubusercontent.com/Ur-amit-01/minimalistic-wallpaper-collection/main/images/OGARart-eagle-mountain-sunset-minimalist.jpg")
+
 FORCE_PIC = os.environ.get("FORCE_PIC", "https://envs.sh/nrg.jpg")
 AUTH_CHANNEL = [int(ch) if id_pattern.search(ch) else ch for ch in environ.get('AUTH_CHANNEL', '').split()] #Ex : ('-10073828 -102782829 -1007282828')
 LOG_CHANNEL = int(os.environ.get("LOG_CHANNEL", "-1002027394591"))
