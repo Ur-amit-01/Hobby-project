@@ -1,6 +1,7 @@
 import os
 import io
 import tempfile
+from pyrogram import Client, filters, enums
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import landscape, A4
