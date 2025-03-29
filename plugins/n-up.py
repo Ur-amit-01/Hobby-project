@@ -1,12 +1,12 @@
 import os
 import io
 import tempfile
+import humanize  # Make sure this is imported
 from pyrogram import Client, filters, enums
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.lib.utils import ImageReader
-from pyrogram import filters
 from pyrogram.types import Message
 from config import LOG_CHANNEL
 from helper.database import db
@@ -16,7 +16,7 @@ from datetime import datetime
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Changed to DEBUG for more verbose logging
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("pdf_bot.log"),
@@ -31,6 +31,11 @@ async def create_4up_pdf(input_path: str, output_path: str):
     logger.info(f"Starting 4-up PDF creation for {input_path}")
     
     try:
+        # Verify the input file exists
+        if not os.path.exists(input_path):
+            logger.error(f"Input file not found: {input_path}")
+            return False
+
         reader = PdfReader(input_path)
         writer = PdfWriter()
         total_pages = len(reader.pages)
@@ -38,6 +43,11 @@ async def create_4up_pdf(input_path: str, output_path: str):
 
         page_width, page_height = landscape(A4)
         margin = 20
+        content_width = page_width - 2 * margin
+        content_height = page_height - 2 * margin
+        slide_width = content_width / 2
+        slide_height = content_height / 2
+        
         logger.debug(f"Using page size: {page_width}x{page_height} with {margin}pt margins")
 
         processed_pages = 0
@@ -49,19 +59,56 @@ async def create_4up_pdf(input_path: str, output_path: str):
             packet = io.BytesIO()
             can = canvas.Canvas(packet, pagesize=(page_width, page_height))
             
-            # [Previous position and drawing code remains the same...]
+            # Position each slide in 2x2 grid
+            positions = [
+                (margin, margin + slide_height),  # Top-left
+                (margin + slide_width, margin + slide_height),  # Top-right
+                (margin, margin),                 # Bottom-left
+                (margin + slide_width, margin)     # Bottom-right
+            ]
+            
+            for j, (page, pos) in enumerate(zip(current_batch, positions)):
+                try:
+                    # Create temporary PDF for each slide
+                    temp_pdf = PdfWriter()
+                    temp_pdf.add_page(page)
+                    temp_path = os.path.join(tempfile.gettempdir(), f"temp_{i+j}.pdf")
+                    with open(temp_path, "wb") as f:
+                        temp_pdf.write(f)
+                    
+                    # Draw slide on canvas
+                    img = ImageReader(temp_path)
+                    can.drawImage(
+                        img,
+                        pos[0],
+                        pos[1],
+                        width=slide_width,
+                        height=slide_height,
+                        preserveAspectRatio=True,
+                        anchor='nw'
+                    )
+                    os.unlink(temp_path)
+                except Exception as e:
+                    logger.error(f"Error processing page {i+j+1}: {str(e)}")
+                    continue
             
             can.save()
             packet.seek(0)
-            writer.add_page(PdfReader(packet).pages[0])
-            processed_pages += batch_size
             
-            logger.debug(
-                f"Processed batch {i//4 + 1}: "
-                f"Pages {i+1}-{i+batch_size} "
-                f"(took {(datetime.now() - batch_start).total_seconds():.2f}s)"
-            )
+            # Add combined page to output
+            try:
+                combined_pdf = PdfReader(packet)
+                if len(combined_pdf.pages) > 0:
+                    writer.add_page(combined_pdf.pages[0])
+                    processed_pages += batch_size
+                    logger.debug(
+                        f"Processed batch {i//4 + 1}: Pages {i+1}-{i+batch_size} "
+                        f"(took {(datetime.now() - batch_start).total_seconds():.2f}s)"
+                    )
+            except Exception as e:
+                logger.error(f"Failed to add combined page: {str(e)}")
 
+        # Write output PDF
         with open(output_path, "wb") as f:
             writer.write(f)
         
@@ -80,7 +127,7 @@ async def create_4up_pdf(input_path: str, output_path: str):
 @Client.on_message(filters.command(["4up"]) & filters.private)
 @auth_check
 async def handle_4up_command(client: Client, message: Message):
-    """Enhanced with detailed logging"""
+    """Enhanced with detailed logging and error handling"""
     user_id = message.from_user.id
     logger.info(f"Received /4up command from user {user_id}")
     
@@ -100,66 +147,89 @@ async def handle_4up_command(client: Client, message: Message):
         await message.reply_text("❌ Only PDF files are supported for 4up conversion")
         return
     
-    logger.info(f"Processing PDF: {doc.file_name} ({humanize.naturalsize(doc.file_size)})")
+    logger.info(f"Processing PDF: {doc.file_name} (Size: {humanize.naturalsize(doc.file_size)})")
     progress_msg = await message.reply_text("🔄 Processing your 4-up PDF...")
     
     with tempfile.TemporaryDirectory() as temp_dir:
         input_path = os.path.join(temp_dir, "input.pdf")
         output_path = os.path.join(temp_dir, "4up_output.pdf")
+        thumb_path = None
         
         try:
-            # Download logging
+            # Download the PDF
             dl_start = datetime.now()
-            await client.download_media(doc.file_id, file_name=input_path)
-            dl_time = (datetime.now() - dl_start).total_seconds()
-            logger.info(f"Download completed in {dl_time:.2f}s ({humanize.naturalsize(doc.file_size/dl_time)}/s)")
-            
-            # Processing
+            try:
+                await client.download_media(
+                    message.reply_to_message.document.file_id,
+                    file_name=input_path,
+                    progress=lambda c, t: logger.debug(f"Download progress: {c}/{t}")
+                )
+                dl_time = (datetime.now() - dl_start).total_seconds()
+                logger.info(f"Download completed in {dl_time:.2f}s")
+                
+                # Verify download
+                if not os.path.exists(input_path) or os.path.getsize(input_path) == 0:
+                    raise Exception("Downloaded file is empty or missing")
+            except Exception as e:
+                logger.error(f"Download failed: {str(e)}")
+                await progress_msg.edit_text("❌ Failed to download PDF")
+                return
+
+            # Process the PDF
             process_start = datetime.now()
             success = await create_4up_pdf(input_path, output_path)
             
-            if not success:
+            if not success or not os.path.exists(output_path):
                 logger.error(f"4-up creation failed for user {user_id}")
-                await progress_msg.edit_text("❌ Failed to create 4-up PDF")
+                await progress_msg.edit_text("❌ Failed to process PDF")
                 return
             
             process_time = (datetime.now() - process_start).total_seconds()
             logger.info(f"PDF processing completed in {process_time:.2f}s")
-            
-            # Thumbnail handling
-            thumb_path = None
-            if await db.get_thumbnail(user_id):
-                try:
-                    thumb_path = await client.download_media(await db.get_thumbnail(user_id))
+
+            # Get thumbnail if available
+            try:
+                thumb = await db.get_thumbnail(user_id)
+                if thumb:
+                    thumb_path = await client.download_media(thumb)
                     logger.debug(f"Using custom thumbnail for user {user_id}")
-                except Exception as e:
-                    logger.warning(f"Failed to download thumbnail for user {user_id}: {str(e)}")
-            
-            # Send result
+            except Exception as e:
+                logger.warning(f"Thumbnail error: {str(e)}")
+
+            # Send the result
             await message.reply_document(
                 document=output_path,
                 thumb=thumb_path,
-                caption="✅ Your 4-slides-per-page PDF (Landscape A4)"
+                caption="✅ Your 4-slides-per-page PDF (Landscape A4)",
+                progress=lambda c, t: logger.debug(f"Upload progress: {c}/{t}")
             )
             logger.info(f"Successfully sent result to user {user_id}")
-            
+
             # Log to channel
-            log_caption = (
-                f"📑 4-up PDF created\n"
-                f"👤 User: {message.from_user.mention}\n"
-                f"🆔 ID: {user_id}\n"
-                f"⏱️ Process time: {process_time:.1f}s\n"
-                f"📊 Original: {doc.file_name} ({humanize.naturalsize(doc.file_size)})\n"
-                f"🔄 Converted: {humanize.naturalsize(os.path.getsize(output_path))}"
-            )
-            await client.send_document(LOG_CHANNEL, document=output_path, caption=log_caption)
-            
+            try:
+                output_size = os.path.getsize(output_path)
+                log_caption = (
+                    f"📑 4-up PDF created\n"
+                    f"👤 User: {message.from_user.mention}\n"
+                    f"🆔 ID: {user_id}\n"
+                    f"⏱️ Process time: {process_time:.1f}s\n"
+                    f"📊 Original: {humanize.naturalsize(doc.file_size)}\n"
+                    f"🔄 Converted: {humanize.naturalsize(output_size)}"
+                )
+                await client.send_document(
+                    LOG_CHANNEL,
+                    document=output_path,
+                    caption=log_caption
+                )
+            except Exception as e:
+                logger.error(f"Failed to log to channel: {str(e)}")
+
         except Exception as e:
-            logger.error(f"Unexpected error processing 4-up for user {user_id}: {str(e)}", exc_info=True)
+            logger.error(f"Unexpected error: {str(e)}", exc_info=True)
             await progress_msg.edit_text("❌ An unexpected error occurred")
         finally:
+            # Cleanup
             if thumb_path and os.path.exists(thumb_path):
                 os.remove(thumb_path)
             await progress_msg.delete()
             logger.debug("Cleaned up temporary resources")
-
