@@ -127,67 +127,59 @@ async def create_4up_pdf(input_path: str, output_path: str):
 @Client.on_message(filters.command(["4up"]) & filters.private)
 @auth_check
 async def handle_4up_command(client: Client, message: Message):
-    """Enhanced with detailed logging and error handling"""
+    """Processes a PDF into 4-slides-per-page format."""
     user_id = message.from_user.id
     logger.info(f"Received /4up command from user {user_id}")
-    
-    if not message.reply_to_message:
-        logger.warning(f"User {user_id} sent /4up without replying to a message")
-        await message.reply_text("🔹 Please reply to a PDF file with /4up command")
-        return
-    
-    if not message.reply_to_message.document:
-        logger.warning(f"User {user_id} replied to non-document message")
-        await message.reply_text("❌ Please reply to a PDF document")
+
+    # Ensure the command is a reply to a document
+    if not message.reply_to_message or not message.reply_to_message.document:
+        logger.warning(f"User {user_id} sent /4up without replying to a document")
+        await message.reply_text("❌ Please reply to a **PDF file** with /4up.")
         return
     
     doc = message.reply_to_message.document
     if doc.mime_type != "application/pdf":
         logger.warning(f"User {user_id} sent non-PDF file: {doc.file_name} ({doc.mime_type})")
-        await message.reply_text("❌ Only PDF files are supported for 4up conversion")
+        await message.reply_text("❌ Only **PDF files** are supported for 4up conversion.")
         return
-    
+
     logger.info(f"Processing PDF: {doc.file_name} (Size: {humanize.naturalsize(doc.file_size)})")
     progress_msg = await message.reply_text("🔄 Processing your 4-up PDF...")
-    
+
     with tempfile.TemporaryDirectory() as temp_dir:
         input_path = os.path.join(temp_dir, "input.pdf")
         output_path = os.path.join(temp_dir, "4up_output.pdf")
         thumb_path = None
-        
+
         try:
             # Download the PDF
             dl_start = datetime.now()
-            try:
-                await client.download_media(
-                    message.reply_to_message.document.file_id,
-                    file_name=input_path,
-                    progress=lambda c, t: logger.debug(f"Download progress: {c}/{t}")
-                )
-                dl_time = (datetime.now() - dl_start).total_seconds()
-                logger.info(f"Download completed in {dl_time:.2f}s")
-                
-                # Verify download
-                if not os.path.exists(input_path) or os.path.getsize(input_path) == 0:
-                    raise Exception("Downloaded file is empty or missing")
-            except Exception as e:
-                logger.error(f"Download failed: {str(e)}")
-                await progress_msg.edit_text("❌ Failed to download PDF")
+            await client.download_media(
+                message.reply_to_message.document.file_id,
+                file_name=input_path
+            )
+            dl_time = (datetime.now() - dl_start).total_seconds()
+            logger.info(f"Download completed in {dl_time:.2f}s")
+
+            # Verify file downloaded correctly
+            if not os.path.exists(input_path) or os.path.getsize(input_path) == 0:
+                logger.error("Downloaded file is missing or empty!")
+                await progress_msg.edit_text("❌ Failed to download the PDF.")
                 return
 
-            # Process the PDF
+            # Process the PDF (Create 4-up format)
             process_start = datetime.now()
             success = await create_4up_pdf(input_path, output_path)
-            
+
             if not success or not os.path.exists(output_path):
                 logger.error(f"4-up creation failed for user {user_id}")
-                await progress_msg.edit_text("❌ Failed to process PDF")
+                await progress_msg.edit_text("❌ Failed to process PDF.")
                 return
             
             process_time = (datetime.now() - process_start).total_seconds()
             logger.info(f"PDF processing completed in {process_time:.2f}s")
 
-            # Get thumbnail if available
+            # Fetch custom thumbnail (if available)
             try:
                 thumb = await db.get_thumbnail(user_id)
                 if thumb:
@@ -196,39 +188,18 @@ async def handle_4up_command(client: Client, message: Message):
             except Exception as e:
                 logger.warning(f"Thumbnail error: {str(e)}")
 
-            # Send the result
+            # Send the processed PDF back to the user
             await message.reply_document(
                 document=output_path,
                 thumb=thumb_path,
-                caption="✅ Your 4-slides-per-page PDF (Landscape A4)",
-                progress=lambda c, t: logger.debug(f"Upload progress: {c}/{t}")
+                caption="✅ Your **4-slides-per-page PDF** (Landscape A4)",
             )
             logger.info(f"Successfully sent result to user {user_id}")
 
-            # Log to channel
-            try:
-                output_size = os.path.getsize(output_path)
-                log_caption = (
-                    f"📑 4-up PDF created\n"
-                    f"👤 User: {message.from_user.mention}\n"
-                    f"🆔 ID: {user_id}\n"
-                    f"⏱️ Process time: {process_time:.1f}s\n"
-                    f"📊 Original: {humanize.naturalsize(doc.file_size)}\n"
-                    f"🔄 Converted: {humanize.naturalsize(output_size)}"
-                )
-                await client.send_document(
-                    LOG_CHANNEL,
-                    document=output_path,
-                    caption=log_caption
-                )
-            except Exception as e:
-                logger.error(f"Failed to log to channel: {str(e)}")
-
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}", exc_info=True)
-            await progress_msg.edit_text("❌ An unexpected error occurred")
+            await progress_msg.edit_text("❌ An unexpected error occurred.")
         finally:
-            # Cleanup
             if thumb_path and os.path.exists(thumb_path):
                 os.remove(thumb_path)
             await progress_msg.delete()
