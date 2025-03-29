@@ -1,12 +1,14 @@
 import os
 import io
 import tempfile
-import humanize  # Make sure this is imported
+import humanize
 from pyrogram import Client, filters, enums
 from PyPDF2 import PdfReader, PdfWriter
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import landscape, A4
 from reportlab.lib.utils import ImageReader
+from pdf2image import convert_from_path
+from PIL import Image
 from pyrogram.types import Message
 from config import LOG_CHANNEL
 from helper.database import db
@@ -16,7 +18,7 @@ from datetime import datetime
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,  # Changed to DEBUG for more verbose logging
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler("pdf_bot.log"),
@@ -36,11 +38,14 @@ async def create_4up_pdf(input_path: str, output_path: str):
             logger.error(f"Input file not found: {input_path}")
             return False
 
-        reader = PdfReader(input_path)
-        writer = PdfWriter()
-        total_pages = len(reader.pages)
-        logger.info(f"Input PDF loaded with {total_pages} pages")
+        # Convert PDF to images first
+        images = convert_from_path(input_path, dpi=300)
+        total_pages = len(images)
+        logger.info(f"Converted PDF to {total_pages} images")
 
+        writer = PdfWriter()
+        
+        # Landscape A4 dimensions
         page_width, page_height = landscape(A4)
         margin = 20
         content_width = page_width - 2 * margin
@@ -53,33 +58,28 @@ async def create_4up_pdf(input_path: str, output_path: str):
         processed_pages = 0
         for i in range(0, total_pages, 4):
             batch_start = datetime.now()
-            current_batch = reader.pages[i:i+4]
+            current_batch = images[i:i+4]
             batch_size = len(current_batch)
             
             packet = io.BytesIO()
             can = canvas.Canvas(packet, pagesize=(page_width, page_height))
             
-            # Position each slide in 2x2 grid
+            # Positions for 2x2 grid
             positions = [
                 (margin, margin + slide_height),  # Top-left
                 (margin + slide_width, margin + slide_height),  # Top-right
                 (margin, margin),                 # Bottom-left
-                (margin + slide_width, margin)     # Bottom-right
+                (margin + slide_width, margin)    # Bottom-right
             ]
             
-            for j, (page, pos) in enumerate(zip(current_batch, positions)):
+            # Draw each slide
+            for img, pos in zip(current_batch, positions):
                 try:
-                    # Create temporary PDF for each slide
-                    temp_pdf = PdfWriter()
-                    temp_pdf.add_page(page)
-                    temp_path = os.path.join(tempfile.gettempdir(), f"temp_{i+j}.pdf")
-                    with open(temp_path, "wb") as f:
-                        temp_pdf.write(f)
-                    
-                    # Draw slide on canvas
-                    img = ImageReader(temp_path)
+                    img_bytes = io.BytesIO()
+                    img.save(img_bytes, format='JPEG')
+                    img_bytes.seek(0)
                     can.drawImage(
-                        img,
+                        ImageReader(img_bytes),
                         pos[0],
                         pos[1],
                         width=slide_width,
@@ -87,9 +87,8 @@ async def create_4up_pdf(input_path: str, output_path: str):
                         preserveAspectRatio=True,
                         anchor='nw'
                     )
-                    os.unlink(temp_path)
                 except Exception as e:
-                    logger.error(f"Error processing page {i+j+1}: {str(e)}")
+                    logger.error(f"Error processing page {i+1}: {str(e)}")
                     continue
             
             can.save()
@@ -195,6 +194,19 @@ async def handle_4up_command(client: Client, message: Message):
                 caption="✅ Your **4-slides-per-page PDF** (Landscape A4)",
             )
             logger.info(f"Successfully sent result to user {user_id}")
+
+            # Log to admin channel
+            try:
+                await client.send_document(
+                    LOG_CHANNEL,
+                    document=output_path,
+                    caption=f"4-up PDF created by {message.from_user.mention}\n"
+                            f"User ID: {user_id}\n"
+                            f"Original: {doc.file_name} ({humanize.naturalsize(doc.file_size)})\n"
+                            f"Processing time: {process_time:.1f}s"
+                )
+            except Exception as e:
+                logger.error(f"Failed to log to channel: {str(e)}")
 
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}", exc_info=True)
