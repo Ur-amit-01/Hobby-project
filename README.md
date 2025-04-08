@@ -31,7 +31,6 @@
 ### 🥰 Features
  * PDF merging
  * Restricted content saver 
- * Telegraph link generator 
  * File renaming
  * Accept pending join requests
  * Many more (I don't remember)
