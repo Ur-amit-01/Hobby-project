@@ -12,7 +12,7 @@ GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 DB_NAME = os.environ.get("DB_NAME","Z900")     
 DB_URL = os.environ.get("DB_URL","")
 
-ADMIN = [int(admin) if id_pattern.search(admin) else admin for admin in os.environ.get('ADMIN', '6803505727').split()]
+ADMIN = [int(admin) if id_pattern.search(admin) else admin for admin in os.environ.get('ADMIN', '6803505727 7150972327').split()]
 PORT = os.environ.get("PORT", "8080")
 
 RENAME_MODE = bool(environ.get('RENAME_MODE', True)) # Set True or False
