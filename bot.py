@@ -3,7 +3,6 @@ import logging.config
 from pyrogram import Client 
 from config import *
 from aiohttp import web
-from plugins.web_support import web_server
 
 logging.config.fileConfig('logging.conf')
 logging.getLogger().setLevel(logging.INFO)
