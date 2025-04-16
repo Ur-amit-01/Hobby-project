@@ -17,7 +17,7 @@ async def accept(client, message):
     
     # Proceed if the command is issued in a channel
     channel_id = message.chat.id
-    show = await client.send_message(channel_id, "⏳ **Please wait...**")
+    show = await client.send_message(channel_id, "⏳ **Processing...**")
     
     # Check if bot has required permissions
     try:
@@ -25,7 +25,7 @@ async def accept(client, message):
         bot_permissions = bot_member.privileges
         
         if not (bot_permissions.can_invite_users and bot_permissions.can_promote_members):
-            return await show.edit("❌ **I need 'Invite Users' and 'Add New Admins' permissions to perform this operation.**")
+            return await show.edit("📌 **I need 'Invite Users' and 'Add New Admins' permissions to work properly.**")
     except Exception as e:
         return await show.edit(f"❌ **Error checking bot permissions: {str(e)}**")
     
@@ -39,16 +39,15 @@ async def accept(client, message):
     except Exception as e:
         return await show.edit(f"❌ **Login session has expired or error occurred: {str(e)}**")
     
-    await show.edit("🔄 **Setting up the process...**")
+    await show.edit("⏳ **Processing...**")
     
     # Generate an invite link for the channel
     try:
         invite_link = await client.create_chat_invite_link(channel_id)
         invite_url = invite_link.invite_link
-        await show.edit(f"✅ **Created invite link. Asking user to join...**")
     except Exception as e:
         await acc.stop()
-        return await show.edit(f"❌ **Failed to create invite link: {str(e)}**")
+        return
     
     # Have the session account join using the invite link
     try:
@@ -56,10 +55,9 @@ async def accept(client, message):
             # Check if already in channel
             try:
                 await acc.get_chat_member(channel_id, user_id)
-                await show.edit("✅ **User already in the channel. Proceeding...**")
             except UserNotParticipant:
                 await acc.join_chat(invite_url)
-                await show.edit("✅ **User joined the channel. Promoting to admin...**")
+                await show.edit("✅ **Inviting my assistant...**")
         except Exception as e:
             await acc.stop()
             return await show.edit(f"❌ **Failed to join channel: {str(e)}**")
@@ -84,14 +82,12 @@ async def accept(client, message):
                 can_edit_messages=False
             )
         )
-        await show.edit("✅ **User promoted to admin. Now accepting join requests...**")
     except Exception as e:
         await acc.stop()
-        return await show.edit(f"❌ **Failed to promote user: {str(e)}**")
     
     # Accept all join requests
     try:
-        msg = await show.edit("✅ **Accepting all join requests... Please wait until it's completed.**")
+        msg = await show.edit("**Accepting join requests... It'll take some time, plz be patient. ✨**")
         requests_count = 0
         
         while True:
@@ -106,8 +102,6 @@ async def accept(client, message):
             except Exception as e:
                 await msg.edit(f"⚠️ **Error while accepting requests: {str(e)}**")
                 break
-        
-        await msg.edit(f"🎉 **Successfully accepted {requests_count} join requests!**")
     except Exception as e:
         await msg.edit(f"⚠️ **An error occurred while accepting requests: {str(e)}**")
     
@@ -115,7 +109,7 @@ async def accept(client, message):
     try:
         await asyncio.sleep(2)  # Small delay before leaving
         await acc.leave_chat(channel_id)
-        await msg.edit(f"✅ **Mission completed! Accepted {requests_count} join requests and left the channel.**")
+        await msg.edit(f"✅🎉 **Mission accomplished! Accepted {requests_count} join requests.**")
     except Exception as e:
         await msg.edit(f"✅ **Accepted {requests_count} join requests, but failed to leave the channel: {str(e)}**")
     
