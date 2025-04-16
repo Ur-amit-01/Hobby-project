@@ -2,7 +2,7 @@ import os
 import asyncio
 from pyrogram import Client, filters, enums
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-from pyrogram.errors import UserAlreadyParticipant, InviteRequestSent
+from pyrogram.errors import UserAlreadyParticipant, InviteRequestSent, FloodWait
 from config import API_ID, API_HASH, BOT_TOKEN, NEW_REQ_MODE, SESSION_STRING
 
 @Client.on_message(filters.command('accept'))
@@ -36,7 +36,6 @@ async def accept(client, message):
     except Exception as e:
         return await show.edit(f"❌ **Login session has expired or error occurred: {str(e)}**")
     
-            # Add session account to the channel
     try:
         user_info = await acc.get_me()
         user_id = user_info.id
@@ -59,18 +58,21 @@ async def accept(client, message):
             await msg.edit("⏳ **Promoting session account to admin with required permissions...**")
             
             try:
-                # Promote the session account with minimal necessary permissions
+                # Updated promote_chat_member parameters
                 await client.promote_chat_member(
                     chat_id=channel_id,
                     user_id=user_id,
-                    can_change_info=False,
+                    is_anonymous=False,
+                    can_manage_chat=True,
                     can_post_messages=True,
                     can_edit_messages=False,
                     can_delete_messages=False,
+                    can_manage_video_chats=False,
                     can_restrict_members=False,
+                    can_promote_members=False,
+                    can_change_info=False,
                     can_invite_users=True,
-                    can_pin_messages=False,
-                    can_promote_members=False
+                    can_pin_messages=False
                 )
                 
                 await msg.edit("✅ **Session account promoted to admin. Now accepting join requests...**")
@@ -93,7 +95,7 @@ async def accept(client, message):
                         break
                     request_count += len(current_requests)
                     await msg.edit(f"⏳ **Accepted {request_count} join requests so far...**")
-                    await asyncio.sleep(2)  # Slightly longer delay to avoid rate limiting
+                    await asyncio.sleep(2)
                 except Exception as e:
                     print(f"Error in batch approval: {e}")
                     # Try individual approvals if batch fails
@@ -105,9 +107,12 @@ async def accept(client, message):
                                 request_count += 1
                                 if request_count % 10 == 0:
                                     await msg.edit(f"⏳ **Accepted {request_count} join requests so far...**")
+                                await asyncio.sleep(1)
+                            except FloodWait as fw:
+                                await asyncio.sleep(fw.value)
+                                continue
                             except Exception as req_error:
                                 print(f"Error approving request: {req_error}")
-                            await asyncio.sleep(1)
                         if not requests:
                             break
                     except Exception as batch_error:
@@ -124,14 +129,17 @@ async def accept(client, message):
                 await client.promote_chat_member(
                     chat_id=channel_id,
                     user_id=user_id,
-                    can_change_info=False,
+                    is_anonymous=False,
+                    can_manage_chat=False,
                     can_post_messages=False,
                     can_edit_messages=False,
                     can_delete_messages=False,
+                    can_manage_video_chats=False,
                     can_restrict_members=False,
+                    can_promote_members=False,
+                    can_change_info=False,
                     can_invite_users=False,
-                    can_pin_messages=False,
-                    can_promote_members=False
+                    can_pin_messages=False
                 )
                 await msg.edit("✅ **Session account demoted. Now leaving the channel...**")
             except Exception as demote_error:
@@ -153,7 +161,7 @@ async def accept(client, message):
 @Client.on_chat_join_request(filters.group | filters.channel)
 async def approve_new(client, m):
     if not NEW_REQ_MODE:
-        return  # If NEW_REQ_MODE is False, the function exits without processing the join request.
+        return
 
     try:
         await client.approve_chat_join_request(m.chat.id, m.from_user.id)
@@ -164,6 +172,7 @@ async def approve_new(client, m):
             )
         except:
             pass
+    except FloodWait as fw:
+        await asyncio.sleep(fw.value)
     except Exception as e:
         print(f"⚠️ {str(e)}")
-        pass
