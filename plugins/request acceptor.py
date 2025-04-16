@@ -36,7 +36,7 @@ async def accept(client, message):
     except Exception as e:
         return await show.edit(f"❌ **Login session has expired or error occurred: {str(e)}**")
     
-    # Add session account to the channel
+            # Add session account to the channel
     try:
         user_info = await acc.get_me()
         user_id = user_info.id
@@ -47,28 +47,101 @@ async def accept(client, message):
         try:
             # Try to add the user to the channel
             chat_link = await client.create_chat_invite_link(channel_id)
-            await acc.join_chat(chat_link.invite_link)
-            await msg.edit(f"✅ **{user_name} joined the channel. Now accepting join requests...**")
-        except UserAlreadyParticipant:
-            await msg.edit(f"✅ **{user_name} is already in the channel. Now accepting join requests...**")
+            try:
+                await acc.join_chat(chat_link.invite_link)
+                await msg.edit(f"✅ **{user_name} joined the channel.**")
+            except UserAlreadyParticipant:
+                await msg.edit(f"✅ **{user_name} is already in the channel.**")
+            except Exception as e:
+                return await msg.edit(f"❌ **Could not add session account to channel: {str(e)}**")
+            
+            # Promote the session account to admin with necessary permissions
+            await msg.edit("⏳ **Promoting session account to admin with required permissions...**")
+            
+            try:
+                # Creating admin rights with minimal necessary permissions
+                admin_rights = enums.ChatPrivileges(
+                    can_manage_chat=True,
+                    can_invite_users=True,
+                    can_manage_invite_links=True
+                )
+                
+                # Promote the session account
+                await client.promote_chat_member(
+                    chat_id=channel_id,
+                    user_id=user_id,
+                    privileges=admin_rights
+                )
+                
+                await msg.edit("✅ **Session account promoted to admin. Now accepting join requests...**")
+            except Exception as e:
+                return await msg.edit(f"❌ **Could not promote session account: {str(e)}**")
+        
         except Exception as e:
-            return await msg.edit(f"❌ **Could not add session account to channel: {str(e)}**")
+            return await msg.edit(f"❌ **Error in preparing session account: {str(e)}**")
         
         # Accept all join requests
         try:
-            while True:
-                await acc.approve_all_chat_join_requests(channel_id)
-                await asyncio.sleep(1)
-                join_requests = [request async for request in acc.get_chat_join_requests(channel_id)]
-                if not join_requests:
-                    break
+            await msg.edit("⏳ **Accepting all join requests...**")
+            request_count = 0
             
-            await msg.edit("🎉 **Successfully accepted all join requests!**")
+            while True:
+                try:
+                    await acc.approve_all_chat_join_requests(channel_id)
+                    current_requests = [request async for request in acc.get_chat_join_requests(channel_id)]
+                    if not current_requests:
+                        break
+                    request_count += len(current_requests)
+                    await msg.edit(f"⏳ **Accepted {request_count} join requests so far...**")
+                    await asyncio.sleep(2)  # Slightly longer delay to avoid rate limiting
+                except Exception as e:
+                    print(f"Error in batch approval: {e}")
+                    # Try individual approvals if batch fails
+                    try:
+                        requests = [request async for request in acc.get_chat_join_requests(channel_id)]
+                        for request in requests:
+                            try:
+                                await acc.approve_chat_join_request(channel_id, request.user.id)
+                                request_count += 1
+                                if request_count % 10 == 0:
+                                    await msg.edit(f"⏳ **Accepted {request_count} join requests so far...**")
+                            except Exception as req_error:
+                                print(f"Error approving request: {req_error}")
+                            await asyncio.sleep(1)
+                        if not requests:
+                            break
+                    except Exception as batch_error:
+                        return await msg.edit(f"⚠️ **Error during individual approvals: {str(batch_error)}**")
+            
+            await msg.edit(f"🎉 **Successfully accepted {request_count} join requests!**")
         except Exception as e:
             await msg.edit(f"⚠️ **An error occurred while accepting requests: {str(e)}**")
         
-        # Leave the channel
+        # Demote and then leave the channel
         try:
+            # First demote the session account
+            try:
+                await client.promote_chat_member(
+                    chat_id=channel_id,
+                    user_id=user_id,
+                    privileges=enums.ChatPrivileges(
+                        can_manage_chat=False,
+                        can_delete_messages=False,
+                        can_manage_video_chats=False,
+                        can_restrict_members=False,
+                        can_promote_members=False,
+                        can_change_info=False,
+                        can_invite_users=False,
+                        can_pin_messages=False,
+                        can_manage_invite_links=False
+                    )
+                )
+                await msg.edit("✅ **Session account demoted. Now leaving the channel...**")
+            except Exception as demote_error:
+                print(f"Error demoting: {demote_error}")
+                # Continue even if demotion fails
+            
+            # Now leave the channel
             await acc.leave_chat(channel_id)
             await msg.edit("✅ **All join requests accepted and session account has left the channel!**")
         except Exception as e:
