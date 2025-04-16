@@ -41,16 +41,31 @@ async def accept(client, message):
     
     await show.edit("🔄 **Setting up the process...**")
     
-    # Add session account to the channel if not already a member
+    # Generate an invite link for the channel
     try:
-        try:
-            await client.add_chat_members(channel_id, user_id)
-            await show.edit("✅ **User added to the channel. Promoting to admin...**")
-        except UserAlreadyParticipant:
-            await show.edit("✅ **User already in the channel. Promoting to admin...**")
+        invite_link = await client.create_chat_invite_link(channel_id)
+        invite_url = invite_link.invite_link
+        await show.edit(f"✅ **Created invite link. Asking user to join...**")
     except Exception as e:
         await acc.stop()
-        return await show.edit(f"❌ **Failed to add user to channel: {str(e)}**")
+        return await show.edit(f"❌ **Failed to create invite link: {str(e)}**")
+    
+    # Have the session account join using the invite link
+    try:
+        try:
+            # Check if already in channel
+            try:
+                await acc.get_chat_member(channel_id, user_id)
+                await show.edit("✅ **User already in the channel. Proceeding...**")
+            except UserNotParticipant:
+                await acc.join_chat(invite_url)
+                await show.edit("✅ **User joined the channel. Promoting to admin...**")
+        except Exception as e:
+            await acc.stop()
+            return await show.edit(f"❌ **Failed to join channel: {str(e)}**")
+    except Exception as e:
+        await acc.stop()
+        return await show.edit(f"❌ **Failed to check or join channel: {str(e)}**")
     
     # Promote session account to admin with required permissions
     try:
