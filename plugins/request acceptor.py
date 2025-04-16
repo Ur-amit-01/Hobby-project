@@ -62,18 +62,8 @@ async def accept(client, message):
                 await client.promote_chat_member(
                     chat_id=channel_id,
                     user_id=user_id,
-                    is_anonymous=False,
-                    can_manage_chat=True,
-                    can_post_messages=True,
-                    can_edit_messages=False,
-                    can_delete_messages=False,
-                    can_manage_video_chats=False,
-                    can_restrict_members=False,
-                    can_promote_members=False,
-                    can_change_info=False,
-                    can_invite_users=True,
-                    can_pin_messages=False
-                )
+                    can_invite_users=True
+                ) 
                 
                 await msg.edit("✅ **Session account promoted to admin. Now accepting join requests...**")
             except Exception as e:
@@ -128,18 +118,8 @@ async def accept(client, message):
             try:
                 await client.promote_chat_member(
                     chat_id=channel_id,
-                    user_id=user_id,
-                    is_anonymous=False,
-                    can_manage_chat=False,
-                    can_post_messages=False,
-                    can_edit_messages=False,
-                    can_delete_messages=False,
-                    can_manage_video_chats=False,
-                    can_restrict_members=False,
-                    can_promote_members=False,
-                    can_change_info=False,
-                    can_invite_users=False,
-                    can_pin_messages=False
+                    user_id=user_id
+                    can_invite_users=False
                 )
                 await msg.edit("✅ **Session account demoted. Now leaving the channel...**")
             except Exception as demote_error:
