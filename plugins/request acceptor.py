@@ -118,7 +118,7 @@ async def accept(client, message):
             try:
                 await client.promote_chat_member(
                     chat_id=channel_id,
-                    user_id=user_id
+                    user_id=user_id,
                     can_invite_users=False
                 )
                 await msg.edit("✅ **Session account demoted. Now leaving the channel...**")
