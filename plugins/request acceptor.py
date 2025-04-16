@@ -59,18 +59,13 @@ async def accept(client, message):
             await msg.edit("⏳ **Promoting session account to admin with required permissions...**")
             
             try:
-                # Creating admin rights with minimal necessary permissions
-                admin_rights = enums.ChatPrivileges(
-                    can_manage_chat=True,
-                    can_invite_users=True,
-                    can_manage_invite_links=True
-                )
-                
-                # Promote the session account
+                # Promote the session account with minimal necessary permissions
                 await client.promote_chat_member(
                     chat_id=channel_id,
                     user_id=user_id,
-                    privileges=admin_rights
+                    can_manage_chat=True,
+                    can_invite_users=True,
+                    can_manage_invite_links=True
                 )
                 
                 await msg.edit("✅ **Session account promoted to admin. Now accepting join requests...**")
@@ -124,17 +119,15 @@ async def accept(client, message):
                 await client.promote_chat_member(
                     chat_id=channel_id,
                     user_id=user_id,
-                    privileges=enums.ChatPrivileges(
-                        can_manage_chat=False,
-                        can_delete_messages=False,
-                        can_manage_video_chats=False,
-                        can_restrict_members=False,
-                        can_promote_members=False,
-                        can_change_info=False,
-                        can_invite_users=False,
-                        can_pin_messages=False,
-                        can_manage_invite_links=False
-                    )
+                    can_manage_chat=False,
+                    can_delete_messages=False,
+                    can_manage_video_chats=False,
+                    can_restrict_members=False,
+                    can_promote_members=False,
+                    can_change_info=False,
+                    can_invite_users=False,
+                    can_pin_messages=False,
+                    can_manage_invite_links=False
                 )
                 await msg.edit("✅ **Session account demoted. Now leaving the channel...**")
             except Exception as demote_error:
