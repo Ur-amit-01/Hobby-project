@@ -111,19 +111,13 @@ class Database:
         result = await self.formatting.find_one({"_id": int(channel_id)})
         return result.get("formatting_text") if result else None
 
-    #============ Post System ============#
-    async def save_post_messages(self, messages):
-        """Save the message IDs of posts sent to channels."""
-        await self.posts.update_one({}, {"$set": {"messages": messages}}, upsert=True)
+    #============ Admib ============
+    
 
-    async def get_post_messages(self):
-        """Retrieve the message IDs of posts sent to channels."""
-        post = await self.posts.find_one()
-        return post.get("messages") if post else {}
 
-    async def delete_post_messages(self):
-        """Delete all post message IDs."""
-        await self.posts.delete_many({})
-
+	async def get_daily_active_users():
+    	return await users_collection.count_documents({
+        	"last_active": {"$gt": datetime.now() - timedelta(days=1)}
+    })
 # Initialize the database
 db = Database(DB_URL, DB_NAME)
