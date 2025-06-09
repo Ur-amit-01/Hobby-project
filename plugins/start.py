@@ -253,7 +253,7 @@ REQUEST_TXT = """
 
 from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
-@Client.on_message(filters.command("admin") & filters.user(ADMINS))
+@Client.on_message(filters.command("admin") & filters.user(ADMIN))
 async def admin_panel(client: Client, message: Message):
     buttons = InlineKeyboardMarkup([
         [InlineKeyboardButton("👥 User Management", callback_data="admin_users")],
