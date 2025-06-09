@@ -1,4 +1,5 @@
 import motor.motor_asyncio
+from datetime import datetime, timedelta
 from config import DB_URL, DB_NAME
 
 class Database:
@@ -20,7 +21,8 @@ class Database:
             prefix=None,
             suffix=None,
             metadata=False,
-            metadata_code="By :- @Madflix_Bots"
+            metadata_code="By :- @Madflix_Bots",
+            last_active=datetime.now()
         )
 
     async def add_user(self, id):
@@ -57,67 +59,41 @@ class Database:
     async def get_caption(self, id):
         user = await self.col.find_one({'_id': int(id)})
         return user.get('caption', None)
-
-    #============ Channel System ============#
-    async def add_channels(self, channel_ids):
-        """Add multiple channels to the database."""
-        added_channels = []
-        already_existing = []
-
-        for channel_id in channel_ids:
-            channel_id = int(channel_id)  # Ensure it's an integer
-            if not await self.is_channel_exist(channel_id):
-                await self.channels.insert_one({"_id": channel_id})
-                added_channels.append(channel_id)
-            else:
-                already_existing.append(channel_id)
-
-        return added_channels, already_existing
-
-    async def delete_channels(self, channel_ids):
-        """Delete multiple channels from the database."""
-        deleted_channels = []
-        not_found = []
-
-        for channel_id in channel_ids:
-            channel_id = int(channel_id)
-            if await self.is_channel_exist(channel_id):
-                await self.channels.delete_one({"_id": channel_id})
-                deleted_channels.append(channel_id)
-            else:
-                not_found.append(channel_id)
-
-        return deleted_channels, not_found
-
-    async def is_channel_exist(self, channel_id):
-        """Check if a channel exists in the database."""
-        return await self.channels.find_one({"_id": int(channel_id)}) is not None
-
-    async def get_all_channels(self):
-        """Retrieve all channels as a list."""
-        return [channel async for channel in self.channels.find({})]
-
-    #============ Formatting System ============#
-    async def save_formatting(self, channel_id, formatting_text):
-        """Save or update formatting text for a channel."""
-        await self.formatting.update_one(
-            {"_id": int(channel_id)},
-            {"$set": {"formatting_text": formatting_text}},
+    
+    #============ Admin System ============#
+    async def add_admin(self, admin_id):
+        """Add an admin to the database."""
+        await self.admins.update_one(
+            {"_id": int(admin_id)},
+            {"$set": {"_id": int(admin_id)}},
             upsert=True
         )
 
-    async def get_formatting(self, channel_id):
-        """Retrieve formatting text for a channel."""
-        result = await self.formatting.find_one({"_id": int(channel_id)})
-        return result.get("formatting_text") if result else None
+    async def remove_admin(self, admin_id):
+        """Remove an admin from the database."""
+        await self.admins.delete_one({"_id": int(admin_id)})
 
-    #============ Admib ============
-    
+    async def is_admin(self, admin_id):
+        """Check if a user is an admin."""
+        return await self.admins.find_one({"_id": int(admin_id)}) is not None
 
+    async def get_all_admins(self):
+        """Retrieve all admins as a list."""
+        return [admin async for admin in self.admins.find({})]
 
-	async def get_daily_active_users():
-    	return await users_collection.count_documents({
-        	"last_active": {"$gt": datetime.now() - timedelta(days=1)}
-    })
+    #============ Analytics ============#
+    async def get_daily_active_users(self):
+        """Count users active in the last 24 hours."""
+        return await self.col.count_documents({
+            "last_active": {"$gt": datetime.now() - timedelta(days=1)}
+        })
+
+    async def update_user_activity(self, user_id):
+        """Update a user's last active timestamp."""
+        await self.col.update_one(
+            {"_id": int(user_id)},
+            {"$set": {"last_active": datetime.now()}}
+        )
+
 # Initialize the database
 db = Database(DB_URL, DB_NAME)
