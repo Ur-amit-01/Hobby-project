@@ -251,3 +251,107 @@ REQUEST_TXT = """
 </b>
 """
 
+from pyrogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+@Client.on_message(filters.command("admin") & filters.user(ADMINS))
+async def admin_panel(client: Client, message: Message):
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("👥 User Management", callback_data="admin_users")],
+        [InlineKeyboardButton("📢 Broadcast", callback_data="admin_broadcast")],
+        [InlineKeyboardButton("📊 Analytics", callback_data="admin_stats")],
+        [InlineKeyboardButton("⚙ Server Controls", callback_data="admin_server")]
+    ])
+    await message.reply_text(
+        "**🛠 Admin Panel**\nChoose an option:",
+        reply_markup=buttons
+    )
+
+@Client.on_callback_query(filters.regex(r"^admin_users$"))
+async def user_management(client: Client, query: CallbackQuery):
+    total_users = await db.total_users_count()
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📤 Export Data", callback_data="export_users")],
+        [InlineKeyboardButton("◀️ Back", callback_data="admin_back")]
+    ])
+    await query.edit_message_text(
+        f"**👥 User Management**\nTotal Users: `{total_users}`",
+        reply_markup=buttons
+    )
+
+@Client.on_callback_query(filters.regex(r"^export_users$"))
+async def export_users(client: Client, query: CallbackQuery):
+    users = await db.get_all_users()  # Implement this in database.py
+    with open("users.csv", "w") as f:
+        f.write("ID,Username,Join Date\n")
+        for user in users:
+            f.write(f"{user['id']},{user.get('username', 'N/A')},{user['join_date']}\n")
+    await client.send_document(
+        chat_id=query.from_user.id,
+        document="users.csv",
+        caption="📊 User data exported"
+    )
+
+@Client.on_callback_query(filters.regex(r"^admin_broadcast$"))
+async def broadcast_menu(client: Client, query: CallbackQuery):
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📩 Send Broadcast", callback_data="broadcast_now")],
+        [InlineKeyboardButton("◀️ Back", callback_data="admin_back")]
+    ])
+    await query.edit_message_text(
+        "**📢 Broadcast Tools**\nReply with a message to broadcast:",
+        reply_markup=buttons
+    )
+
+@Client.on_callback_query(filters.regex(r"^broadcast_now$"))
+async def start_broadcast(client: Client, query: CallbackQuery):
+    await query.edit_message_text("**Enter your broadcast message:**")
+    
+@Client.on_message(filters.user(ADMINS) & filters.text & ~filters.command)
+async def process_broadcast(client: Client, message: Message):
+    if message.reply_to_message and "broadcast" in message.reply_to_message.text:
+        users = await db.get_all_users()
+        success = 0
+        for user in users:
+            try:
+                await message.copy(user["id"])
+                success += 1
+            except Exception:
+                pass
+        await message.reply_text(f"✅ Broadcast sent to {success}/{len(users)} users")
+
+
+@Client.on_callback_query(filters.regex(r"^admin_stats$"))
+async def show_stats(client: Client, query: CallbackQuery):
+    active_today = await db.get_daily_active_users()  # Implement in database.py
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("◀️ Back", callback_data="admin_back")]
+    ])
+    text = f"""
+    **📊 Bot Analytics**
+    → Active Users (24h): `{active_today}`
+    → Total Users: `{await db.total_users_count()}`
+    """
+    await query.edit_message_text(text, reply_markup=buttons)
+
+
+@Client.on_callback_query(filters.regex(r"^admin_server$"))
+async def server_controls(client: Client, query: CallbackQuery):
+    buttons = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔄 Restart Bot", callback_data="restart_bot")],
+        [InlineKeyboardButton("◀️ Back", callback_data="admin_back")]
+    ])
+    await query.edit_message_text(
+        "**⚙ Server Controls**",
+        reply_markup=buttons
+    )
+
+@Client.on_callback_query(filters.regex(r"^restart_bot$"))
+async def restart_bot(client: Client, query: CallbackQuery):
+    await query.edit_message_text("🔄 Restarting bot...")
+    os.system("kill -9 $(pidof python3) && python3 main.py")  # Linux example
+    
+@Client.on_callback_query(filters.regex(r"^admin_back$"))
+async def back_to_admin_panel(client: Client, query: CallbackQuery):
+    await admin_panel(client, query.message)
+
+
