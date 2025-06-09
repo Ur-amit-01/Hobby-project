@@ -306,7 +306,7 @@ async def broadcast_menu(client: Client, query: CallbackQuery):
 async def start_broadcast(client: Client, query: CallbackQuery):
     await query.edit_message_text("**Enter your broadcast message:**")
     
-@Client.on_message(filters.user(ADMINS) & filters.text & ~filters.command)
+@Client.on_message(filters.user(ADMIN) & filters.text & ~filters.command)
 async def process_broadcast(client: Client, message: Message):
     if message.reply_to_message and "broadcast" in message.reply_to_message.text:
         users = await db.get_all_users()
