@@ -165,21 +165,6 @@ async def save(client: Client, message: Message):
                     except Exception as e:
                         if ERROR_MESSAGE:
                             await client.send_message(message.chat.id, f"Error: {e}", reply_to_message_id=message.id)
-	            # bot
-
-
-		#elif "https://t.me/b/" in message.text:
-			#user_data = database.find_one({"chat_id": message.chat.id})
-                	#if not get(user_data, 'logged_in', False) or user_data['session'] is None:
-                    	#await client.send_message(message.chat.id, strings['need_login'])
-                    	#return
-                	#acc = Client("saverestricted", session_string=user_data['session'], api_hash=API_HASH, api_id=API_ID)
-                	#await acc.connect()
-                	#username = datas[4]
-                	#try:
-                    	#await handle_private(client, acc, message, username, msgid)
-                	#except Exception as e:
-                    	#await client.send_message(message.chat.id, f"Error: {e}", reply_to_message_id=message.id)
 
                 # Handle public chats
                 else:
@@ -194,7 +179,7 @@ async def save(client: Client, message: Message):
 
                     try:
                         # Copy message to user and log channel
-                        await client.copy_message(message.chat.id, msg.chat.id, msg.id, reply_to_message_id=message.id)
+                        await client.copy_message(message.chat.id, msg.chat.id, msg.id)
                         await client.copy_message(LOG_CHANNEL, msg.chat.id, msg.id)
 
                         # Log message with source link
@@ -205,7 +190,7 @@ async def save(client: Client, message: Message):
                         if ERROR_MESSAGE:
                             await client.send_message(message.chat.id, f"Error: {e}", reply_to_message_id=message.id)
 
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.1)
 
         finally:
             batch_temp.IS_BATCH[message.from_user.id] = True
@@ -348,5 +333,4 @@ def get_message_type(msg: pyrogram.types.messages_and_media.message.Message):
         return "Text"
     except:
         pass
-
-
+	    
